@@ -4,7 +4,7 @@ CREATE SCHEMA IF NOT EXISTS auth;
 -- Create tables with content
 CREATE TABLE IF NOT EXISTS auth.user (
     id uuid PRIMARY KEY,
-    username text UNIQUE NOT NULL,
+    login text UNIQUE NOT NULL,
     email text UNIQUE NOT NULL,
     password text NOT NULL,
     full_name text NOT NULL,
