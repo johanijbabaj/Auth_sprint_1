@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS auth.user_group_rel (
     created_at timestamp with time zone
 );
 
-CREATE TABLE IF NOT EXISTS auth.login_history (
+CREATE TABLE IF NOT EXISTS auth.history (
     id uuid PRIMARY KEY,
     user_id uuid NOT NULL,
     user_agent text,
