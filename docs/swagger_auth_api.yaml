@@ -14,6 +14,8 @@ basePath: "/v1"
 tags:
 - name: "user"
   description: "Операции с пользователем"
+- name: "group"
+  description: "Операции с группами пользователей (ролями)"
 schemes:
 - "https"
 - "http"
@@ -175,6 +177,35 @@ paths:
       responses:
         default:
           description: "successful operation"
+  /group/update:
+    put:
+      tags:
+        - "group"
+      summary: "Добавить новую или изменить существующую группу пользователей"
+      description:
+      operationId: "groupAdd"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "name"
+        description: "Имя группы"
+        in: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/Group"
+      responses:
+        "200":
+          description: "group updated"
+        "201":
+          description: "group created"
+        "400":
+          description: "group with such name already exists"
+        "402":
+          description: "login required"
+        "403":
+          description: "only superuseds may create new groups"
+  /group/update:
 securityDefinitions:
   movies_auth:
     type: "oauth2"
@@ -220,6 +251,18 @@ definitions:
         format: "date-time"
     xml:
       name: "User"
+  Group:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      name:
+        type: "string"
+      description:
+        type: "string"
+    xml:
+      name: "Group"
   Tag:
     type: "object"
     properties:
