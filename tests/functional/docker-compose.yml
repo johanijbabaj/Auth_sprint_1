@@ -1,0 +1,67 @@
+version: "3.7"
+
+# Для тестирования запускаем сервисы fast_api, redis и elasticsearch
+# Не запускаем сервис ETL, так как контейнер ElasticSearch будет заполняться
+# только тестовыми данными. Сервисы Django, Nginx и Postgres также не нужны
+services:
+  elastic:
+    # Просьба выбрать нужный контейнер, но не удалять второй и третий
+    # image: elasticsearch:7.7.0
+    # image: elasticsearch:7.14.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1-arm64
+    container_name: elastic_movies_test
+    environment:
+      - discovery.type=single-node
+    networks:
+      - movies_network
+    # ports:
+    # - "9200:9200"
+
+  redis:
+    build:
+      context: ../../redis
+      dockerfile: Dockerfile
+    container_name: redis_movies_test
+    volumes:
+      - ../../redis/conf/etc:/usr/local/etc/redis
+    networks:
+      - movies_network
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    # ports:
+    # - "6379:6379"
+
+  fast_api:
+    build:
+      context: ../../fast_api
+      dockerfile: Dockerfile
+    container_name: fast_api_movies_test
+    env_file:
+      - ../../fa.env
+    volumes:
+      - ../../fast_api:/fast_api:ro
+    networks:
+      - movies_network
+    command: ["python", "main.py"]
+    depends_on:
+      - elastic
+      - redis
+    # ports:
+    # - "8000:8000"
+
+  tests:
+    container_name: movies_test
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - fast_api
+      - elastic
+      - redis
+    env_file:
+        - tests.env
+    networks:
+      - movies_network
+    command: ["bash", "-c", "PYTHONPATH=. python utils/wait_for_redis.py && PYTHONPATH=. python utils/wait_for_es.py && pytest -s src/"]
+
+networks:
+  movies_network:

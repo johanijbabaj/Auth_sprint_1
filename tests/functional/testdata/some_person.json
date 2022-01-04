@@ -1,0 +1,10 @@
+[
+    {
+        "id": "23d3d644-5abe-11ec-b50c-5378d698a87b",
+        "full_name": "John Smith",
+        "birth_date": "",
+        "films": [
+            {"id": "6fbe525a-5abe-11ec-b50c-5378d698a87b", "title": "John's film", "role": "actor"}
+        ]
+    }
+]

@@ -1,0 +1,17 @@
+[
+    {
+        "id": "0b105f87-e0a5-45dc-8ce7-f8632088f390",
+        "name": "Western",
+        "description": "Some description",
+        "films": [
+            {
+                "id": "02c24a84-1667-4f98-b459-f08933befa3d",
+                "title": "Star in the Dust"
+            },
+            {
+                "id": "259935b8-d79d-4050-93a7-b3713cfb640c",
+                "title": "North Star"
+            }
+        ]
+    }
+]
