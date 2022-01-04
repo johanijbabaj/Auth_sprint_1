@@ -44,9 +44,8 @@ services:
 
   elastic:
     #Порсьба выбрать нужный контейнер, но не удалять второй и третий
-#    image: elasticsearch:7.7.0
-#    image: elasticsearch:7.14.0
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1-arm64
+    image: elasticsearch:7.14.0
+#    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1-arm64
     container_name: elastic_movies
     environment:
       - discovery.type=single-node
@@ -112,8 +111,8 @@ services:
     networks:
       - movies_network
     command: ["python", "main.py"]
-    ports:
-      - "5000:5000"
+#    ports:
+#      - "5000:5000" Этот порт уже занят, так как мапится на локалхст в nginx
     #depends_on:
     #  - elastic
     #  - redis
