@@ -9,6 +9,12 @@ from auth_config import app, BASE_PATH
 manager = Manager(app)
 
 
+# метод для проверки работы, пожалуйста не удаляйте
+@app.route("/test", methods=['GET'])
+def test():
+    return 'It works!'
+
+
 @app.route(f"{BASE_PATH}/group/update", methods=['PUT', 'POST'])
 def create_update_group():
     """
