@@ -1,3 +1,4 @@
+from typing import Optional
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from auth_config import db
@@ -37,6 +38,23 @@ class User(db.Model):
             UserGroup, UserGroup.group_id == Group.id
         ).filter(UserGroup.used_id == self.id)
 
+    def to_json(self, *, url_prefix: Optional[str] = None):
+        """
+            Преобразовать запись пользователя в объект для сериализации в Python
+
+            Если задан параметр url_prefix то дополнительно вернуть
+            URL для доступа к информации о пользователе, с указанным
+            префиксом.
+        """
+        obj = {
+            'id': self.id,
+            'login': self.login,
+            'email': self.email
+        }
+        if url_prefix:
+            obj['url'] = f"{url_prefix}/user/account/{self.login}"
+        return obj
+
 
 class Group(db.Model):
     """Пользовательская группа (роль)"""
@@ -66,6 +84,23 @@ class Group(db.Model):
         return User.query.join(
             UserGroup, UserGroup.user_id == User.id
         ).filter(UserGroup.group_id == self.id)
+
+    def to_json(self, *, url_prefix: Optional[str] = None):
+        """
+            Преобразовать группу в объект для сериализации в Python
+
+            Если задан параметр url_prefix то дополнительно вернуть
+            URL для доступа к информации об указанной группе, с указанным
+            префиксом.
+        """
+        obj = {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description
+        }
+        if url_prefix:
+            obj['url'] = f"{url_prefix}/group/{self.id}"
+        return obj
 
 
 class History(db.Model):
