@@ -1,15 +1,38 @@
-"""Запуск основного приложения сервиса аутентификации"""
-# flask_app/app.py
-from flask import Flask
+from flask import request
+from flask.json import jsonify
+from flask_script import Manager
+
+from db_models import Group
+
+from auth_config import app, BASE_PATH
+
+manager = Manager(app)
 
 
-app = Flask(__name__)
+@app.route(f"{BASE_PATH}/group/update", methods=['PUT', 'POST'])
+def create_update_group():
+    """
+        Создать новую либо обновить существующую группу пользователей
+    """
+    return jsonify({})
 
 
-@app.route('/hello-world')
-def hello_world():
-    return 'Hello, World!'
+@app.route(f"{BASE_PATH}/group/all", methods=['GET'])
+def list_groups():
+    """
+        Список всех пользовательских групп
+    """
+    groups = []
+    for group in Group.query.all():
+        groups.append(
+            {
+                'id': group.id,
+                'name': group.name,
+                'description': group.description
+            }
+        )
+    return jsonify(groups)
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    manager.run()
