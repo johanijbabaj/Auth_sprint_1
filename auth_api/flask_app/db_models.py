@@ -1,6 +1,3 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from auth_config import db
@@ -24,7 +21,7 @@ class User(db.Model):
         'UserGroup',
         backref=db.backref('user', lazy='joined'),
         lazy='dynamic',
-        cascase='all, delete-orphan'
+        cascade='all, delete-orphan'
     )
 
     def __repr__(self):
@@ -37,8 +34,8 @@ class User(db.Model):
     def get_all_groups(self):
         """Список всех групп, в которых состоит пользователь"""
         return Group.query.join(
-            UserGroup, UserGroup.group_id=Group.id
-        ).filter(UserGroup.used_id=self.id)
+            UserGroup, UserGroup.group_id == Group.id
+        ).filter(UserGroup.used_id == self.id)
 
 
 class Group(db.Model):
@@ -54,7 +51,7 @@ class Group(db.Model):
         'UserGroup',
         backref=db.backref('group', lazy='joined'),
         lazy='dynamic',
-        cascase='all, delete-orphan'
+        cascade='all, delete-orphan'
     )
 
     def __repr__(self):
@@ -67,8 +64,8 @@ class Group(db.Model):
     def get_all_users(self):
         """Список всех пользователей в этой группе"""
         return User.query.join(
-            UserGroup, UserGroup.user_id=User.id
-        ).filter(UserGroup.group_id=self.id)
+            UserGroup, UserGroup.user_id == User.id
+        ).filter(UserGroup.group_id == self.id)
 
 
 class History(db.Model):
