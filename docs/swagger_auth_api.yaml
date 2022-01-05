@@ -182,7 +182,7 @@ paths:
       tags:
         - "group"
       summary: "Добавить новую или изменить существующую группу пользователей"
-      description:
+      description: ""
       operationId: "groupAdd"
       produces:
       - "application/xml"
@@ -205,7 +205,7 @@ paths:
           description: "login required"
         "403":
           description: "only superuseds may create new groups"
-  /group/update:
+  #/group/update:
 securityDefinitions:
   movies_auth:
     type: "oauth2"
