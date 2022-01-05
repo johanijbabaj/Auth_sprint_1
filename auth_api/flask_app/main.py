@@ -1,4 +1,3 @@
-from flask import request
 from flask.json import jsonify
 from flask_script import Manager
 
