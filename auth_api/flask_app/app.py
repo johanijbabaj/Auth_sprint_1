@@ -10,6 +10,11 @@ from auth_config import app, BASE_PATH
 manager = Manager(app)
 
 
+@app.route("/test", methods=['GET'])
+def test():
+    return 'It works!'
+
+
 @app.route(f"{BASE_PATH}/groups/", methods=['GET'])
 def list_groups():
     """

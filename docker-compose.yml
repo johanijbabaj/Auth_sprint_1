@@ -111,8 +111,6 @@ services:
     networks:
       - movies_network
     command: ["python", "app.py", "runserver", "--host", "0.0.0.0"]
-#    ports:
-#      - "5000:5000" Этот порт уже занят, так как мапится на локалхст в nginx
     depends_on:
       - postgres_auth
       - redis_auth
