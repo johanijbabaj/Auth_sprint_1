@@ -10,15 +10,15 @@ paths:
     post:
       parameters:
         - name: login
-          in: "query"
+          in: query
           description: "имя пользователя для входа"
           required: true
-          type: "string"
+          type: string
         - name: password
-          in: "query"
+          in: query
           description: "Пароль"
           required: true
-          type: "string"
+          type: string
       responses:
         "200":
           description: "successful operation"
