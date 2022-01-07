@@ -143,5 +143,5 @@ cython_debug/
 .idea/
 *.iml
 
-state.json
-pgdata/
+pgdata
+auth_api/postgres_auth/
