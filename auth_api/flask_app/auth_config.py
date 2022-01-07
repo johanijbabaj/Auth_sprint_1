@@ -1,12 +1,14 @@
 import os
 from datetime import timedelta
+
+from flasgger import Swagger
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
-from flasgger import Swagger
+from sqlalchemy.orm import Session
 
 BASE_PATH = "/v1"
+
 
 class Config:
     DEBUG = True
@@ -19,9 +21,11 @@ class Config:
 
 app = Flask(__name__)
 app.config.from_object(Config())
-db = SQLAlchemy(app=app, session_options={'autoflush': False})
-dbschema='auth,public'
-engine = create_engine(Config.SQLALCHEMY_DATABASE_URI,
-                       connect_args={'options': '-csearch_path={}'.format(dbschema)})
+db = SQLAlchemy(app=app, session_options={"autoflush": False})
+dbschema = "auth,public"
+engine = create_engine(
+    Config.SQLALCHEMY_DATABASE_URI,
+    connect_args={"options": f"-csearch_path={dbschema}"},
+)
 session = Session(bind=engine)
 swagger = Swagger(app)
