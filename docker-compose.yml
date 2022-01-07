@@ -104,15 +104,13 @@ services:
       context: auth_api/flask_app
       dockerfile: Dockerfile
     container_name: flask_auth_api
-    #env_file:
-    #  - fa.env
+    env_file:
+      - db_auth.env
     volumes:
       - ./auth_api/flask_app:/auth_api/flask_app:ro
     networks:
       - movies_network
-    command: ["python", "main.py"]
-#    ports:
-#      - "5000:5000" Этот порт уже занят, так как мапится на локалхст в nginx
+    command: ["python", "app.py", "runserver", "--host", "0.0.0.0"]
     depends_on:
       - postgres_auth
       - redis_auth
@@ -124,8 +122,8 @@ services:
       - db_auth.env
     volumes:
       - ./auth_api/postgres_auth/pgdata:/var/lib/postgresql/data
-    #    ports:
-    #      - "5432:5432"
+    ports:
+      - "5432:5432"
     networks:
       - movies_network
 

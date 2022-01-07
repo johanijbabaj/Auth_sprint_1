@@ -1,8 +1,8 @@
 swagger: "2.0"
 info:
+  title: "Auth API team18"
   description: "Описание модели API для сервиса аутентификации учебного проекта Кинтеатр. Для примера можно использоваться ключ `special-key` для тестирования"
   version: "1.0.0"
-  title: "Auth API team18"
   termsOfService: "http://swagger.io/terms/"
   contact:
     email: "khaidukov.eugeniy@gmail.com"
@@ -43,7 +43,7 @@ paths:
         "400":
           description: "User is already registered"
   /user/login:
-    get:
+    post:
       tags:
       - "user"
       summary: "Авторизация пользователя в системе"
@@ -183,14 +183,14 @@ paths:
         - "group"
       summary: "Добавить новую или изменить существующую группу пользователей"
       description: ""
-      operationId: "groupAdd"
+      operationId: "groupCreateUpdate"
       produces:
       - "application/xml"
       - "application/json"
       parameters:
-      - name: "name"
-        description: "Имя группы"
+      - name: "body"
         in: "body"
+        description: "Описание группы"
         required: true
         schema:
           $ref: "#/definitions/Group"
@@ -205,7 +205,101 @@ paths:
           description: "login required"
         "403":
           description: "only superuseds may create new groups"
-  #/group/update:
+  /group/all:
+    get:
+      tags:
+      - "group"
+      summary: "Получить список всех групп пользователей"
+      description: ""
+      operationId: "groupGetAll"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters: []
+      responses:
+        "200":
+          description: "Массив описаний групп"
+          schema:
+            $ref: "#/definitions/GroupList"
+  /group/delete/{id}:
+    delete:
+      tags:
+      - "group"
+      summary: "Удалить группу пользователей"
+      description: ""
+      operationId: "groupDelete"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: "id"
+        type: "string"
+        format: "uuid"
+        required: true
+        description: "Идентификатор группы, которую удаляем"
+      responses:
+        "200":
+          description: "successful operation"
+  /group/get/:
+    get:
+      tags:
+      - "group"
+      summary: "Получить список групп пользователя"
+      description: ""
+      operationId: "groupGetByUser"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "uid"
+        in: "query"
+        description: "идентификатор пользователя"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "Массив описаний групп"
+          schema:
+            $ref: "#/definitions/GroupList"
+  /group/grant:
+    put:
+      tags:
+      - "group"
+      description: "Назначить пользователю определенную группу"
+      parameters:
+      - name: "user_id"
+        in: "query"
+        description: "Идентификатор пользователя"
+        required: true
+        type: "string"
+      - name: "role_id"
+        in: "query"
+        description: "Идентификатор пользователя"
+        required: true
+        type: "string"
+      responses:
+        "201":
+          description: "operation successful"
+  /group/revoke:
+    delete:
+      tags:
+      - "group"
+      description: "Удалить пользователя из определенной группы"
+      parameters:
+      - name: "user_id"
+        in: "query"
+        description: "Идентификатор пользователя"
+        required: true
+        type: "string"
+      - name: "role_id"
+        in: "query"
+        description: "Идентификатор пользователя"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "operation successful"
 securityDefinitions:
   movies_auth:
     type: "oauth2"
@@ -263,6 +357,10 @@ definitions:
         type: "string"
     xml:
       name: "Group"
+  GroupList:
+    type: "array"
+    items:
+      $ref: "#/definitions/Group"
   Tag:
     type: "object"
     properties:

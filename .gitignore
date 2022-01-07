@@ -142,3 +142,6 @@ cython_debug/
 # intellij ide
 .idea/
 *.iml
+
+state.json
+pgdata/
