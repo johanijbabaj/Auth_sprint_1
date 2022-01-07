@@ -12,7 +12,7 @@ class User(db.Model):
     login = db.Column(db.String, unique=True, nullable=False)
     email = db.Column(db.String, unique=True, nullable=False)
     password = db.Column(db.String, nullable=False)
-    fullname = db.Column(db.String, nullable=False)
+    full_name = db.Column(db.String, nullable=False)
     phone = db.Column(db.String)
     avatar_link = db.Column(db.String)
     address = db.Column(db.String)

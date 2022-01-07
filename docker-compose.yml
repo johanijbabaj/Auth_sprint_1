@@ -44,8 +44,8 @@ services:
 
   elastic:
     #Порсьба выбрать нужный контейнер, но не удалять второй и третий
-    image: elasticsearch:7.14.0
-#    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1-arm64
+#    image: elasticsearch:7.14.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1-arm64
     container_name: elastic_movies
     environment:
       - discovery.type=single-node
@@ -122,8 +122,8 @@ services:
       - db_auth.env
     volumes:
       - ./auth_api/postgres_auth/pgdata:/var/lib/postgresql/data
-    #    ports:
-    #      - "5432:5432"
+    ports:
+      - "5432:5432"
     networks:
       - movies_network
 
