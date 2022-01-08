@@ -1,6 +1,7 @@
+import datetime
 from http import HTTPStatus
 
-from auth_config import BASE_PATH, app, session
+from auth_config import BASE_PATH, Config, app, session
 from db_models import Group, User
 from flasgger.utils import swag_from
 from flask import request
@@ -11,6 +12,7 @@ from flask_jwt_extended import (
     create_refresh_token,
     get_jwt_identity,
     jwt_required,
+    verify_jwt_in_request,
 )
 from flask_script import Manager
 
@@ -36,7 +38,9 @@ def list_groups():
 
 # Gf@swag_from("swagger_auth_api.yaml")
 # @swag_from("user_login.yml")
-@swag_from("test.yaml")  # FIXME: работают параметры пока только с таким файлом
+@swag_from(
+    "user_login_param.yaml"
+)  # FIXME: работают параметры пока только с таким файлом
 @app.route("/user/login", methods=["POST"])
 def login():
     """
@@ -50,8 +54,12 @@ def login():
     if (user and user.password == password) or (
         username == "test" and password == "test"
     ):
-        access_token = create_access_token(identity=username)
-        refresh_token = create_refresh_token(identity=username)
+        if username == "test":
+            user_identity = username
+        else:
+            user_identity = str(user.id)
+        access_token = create_access_token(identity=user_identity)
+        refresh_token = create_refresh_token(identity=user_identity)
     else:
         return jsonify({"msg": "Bad username or password"}), HTTPStatus.UNAUTHORIZED
 
@@ -61,12 +69,25 @@ def login():
     )
 
 
-@app.route("/user/refresh", methods=["POST"])
 @jwt_required(refresh=True)
+@swag_from("user_refresh_param.yaml")
+@app.route("/user/refresh", methods=["POST"])
 def refresh():
+    """
+    Обновление пары токенов при получении действительного refresh токена
+    #FIXME: необходимо добавить хранение отозванных refresh токенов
+    """
+    try:
+        verify_jwt_in_request(refresh=True)
+    except:
+        return (jsonify({"msg": "Bad refresh token"}), HTTPStatus.UNAUTHORIZED)
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity)
-    return jsonify(access_token=access_token)
+    refresh_token = create_refresh_token(identity=identity)
+    return (
+        jsonify(access_token=access_token, refresh_token=refresh_token),
+        HTTPStatus.OK,
+    )
 
 
 @app.route(f"{BASE_PATH}/group/<group_id>/", methods=["GET"])

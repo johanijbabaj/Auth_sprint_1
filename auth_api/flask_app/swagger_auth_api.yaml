@@ -112,20 +112,20 @@ paths:
       responses:
         default:
           description: "successful operation"
-  /user/account/{username}:
+  /user/account/{user_id}:
     get:
       tags:
       - "user"
       summary: "Получение инфомарции о пользователе"
       description: ""
-      operationId: "getUserByName"
+      operationId: "getUserByID"
       produces:
       - "application/xml"
       - "application/json"
       parameters:
-      - name: "username"
+      - name: "user_id"
         in: "path"
-        description: "Перадется имя пользователя для получения инфомарции по пользователю"
+        description: "Перадется ID пользователя для получения инфомарции по пользователю"
         required: true
         type: "string"
       responses:
@@ -147,9 +147,9 @@ paths:
       - "application/xml"
       - "application/json"
       parameters:
-      - name: "login"
+      - name: "user_id"
         in: "path"
-        description: "Логин обновляемого пользователя"
+        description: "ID обновляемого пользователя"
         required: true
         type: "string"
       - in: "body"

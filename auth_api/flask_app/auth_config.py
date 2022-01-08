@@ -17,6 +17,16 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+    SWAGGER_TEMPLATE = {
+        "securityDefinitions": {
+            "APIKeyHeader": {
+                "type": "apiKey",
+                "name": "Authorization",
+                "in": "header",
+                "description": "Type in the *'Value'* input box below: **'Bearer &lt;JWT&gt;'**, where JWT is the token",
+            }
+        }
+    }
 
 
 app = Flask(__name__)
@@ -28,4 +38,4 @@ engine = create_engine(
     connect_args={"options": f"-csearch_path={dbschema}"},
 )
 session = Session(bind=engine)
-swagger = Swagger(app)
+swagger = Swagger(app, template=Config.SWAGGER_TEMPLATE)
