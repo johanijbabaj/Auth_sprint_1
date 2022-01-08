@@ -34,9 +34,9 @@ def list_groups():
     return jsonify(groups)
 
 
-# @swag_from("swagger_auth_api.yaml")
+# Gf@swag_from("swagger_auth_api.yaml")
 # @swag_from("user_login.yml")
-@swag_from("test.yaml")  # работают параметры пока только с таким файлом FIXME
+@swag_from("test.yaml")  # FIXME: работают параметры пока только с таким файлом
 @app.route("/user/login", methods=["POST"])
 def login():
     """
@@ -51,7 +51,7 @@ def login():
         username == "test" and password == "test"
     ):
         access_token = create_access_token(identity=username)
-        refresh_token = create_refresh_token(identity="example_user")
+        refresh_token = create_refresh_token(identity=username)
     else:
         return jsonify({"msg": "Bad username or password"}), HTTPStatus.UNAUTHORIZED
 
@@ -59,6 +59,14 @@ def login():
         jsonify(access_token=access_token, refresh_token=refresh_token),
         HTTPStatus.OK,
     )
+
+
+@app.route("/user/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+    identity = get_jwt_identity()
+    access_token = create_access_token(identity=identity)
+    return jsonify(access_token=access_token)
 
 
 @app.route(f"{BASE_PATH}/group/<group_id>/", methods=["GET"])
