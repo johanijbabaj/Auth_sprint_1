@@ -1,7 +1,7 @@
 import datetime
 from http import HTTPStatus
 
-from auth_config import BASE_PATH, Config, app, session
+from auth_config import BASE_PATH, Config, app, jwt_redis, session
 from db_models import Group, User
 from flasgger.utils import swag_from
 from flask import request
@@ -10,6 +10,7 @@ from flask_jwt_extended import (
     JWTManager,
     create_access_token,
     create_refresh_token,
+    get_jwt,
     get_jwt_identity,
     jwt_required,
     verify_jwt_in_request,
@@ -18,6 +19,7 @@ from flask_script import Manager
 
 manager = Manager(app)
 jwt = JWTManager(app)
+jwt_redis_blocklist = jwt_redis
 
 
 @app.route("/test", methods=["GET"])
@@ -88,6 +90,32 @@ def refresh():
         jsonify(access_token=access_token, refresh_token=refresh_token),
         HTTPStatus.OK,
     )
+
+
+@jwt_required()
+@swag_from("user_logout_param.yaml")
+@app.route("/user/logout", methods=["DELETE"])
+def logout():
+    """
+    Выход пользователя из аккаунта
+    """
+    try:
+        verify_jwt_in_request()
+    except:
+        return (jsonify({"msg": "Bad access token"}), HTTPStatus.UNAUTHORIZED)
+    jti = get_jwt()["jti"]
+    jwt_redis_blocklist.set(jti, "", ex=Config.ACCESS_EXPIRES)
+    return (
+        jsonify(msg="Access token revoked"),
+        HTTPStatus.OK,
+    )
+
+
+@jwt.token_in_blocklist_loader
+def check_if_token_is_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload["jti"]
+    token_in_redis = jwt_redis_blocklist.get(jti)
+    return token_in_redis is not None
 
 
 @app.route(f"{BASE_PATH}/group/<group_id>/", methods=["GET"])

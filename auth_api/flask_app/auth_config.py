@@ -7,6 +7,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+import redis
+
 BASE_PATH = "/v1"
 
 
@@ -17,6 +19,7 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+    ACCESS_EXPIRES = timedelta(hours=1)
     SWAGGER_TEMPLATE = {
         "securityDefinitions": {
             "APIKeyHeader": {
@@ -36,6 +39,13 @@ dbschema = "auth,public"
 engine = create_engine(
     Config.SQLALCHEMY_DATABASE_URI,
     connect_args={"options": f"-csearch_path={dbschema}"},
+)
+jwt_redis = redis.Redis(
+    host=str(os.getenv("REDIS_AUTH_HOST")),
+    port=int(os.getenv("REDIS_AUTH_PORT", 6379)),
+    password=os.getenv("REDIS_AUTH_PASSWORD"),
+    db=0,
+    decode_responses=True,
 )
 session = Session(bind=engine)
 swagger = Swagger(app, template=Config.SWAGGER_TEMPLATE)
