@@ -75,7 +75,7 @@ def login():
     """
     username = request.args.get("login", None)
     password = request.args.get("password", None)
-    user = User.query.filter(User.login == username).first()
+    user = User.query.filter_by(login=username).first()
 
     if (user and check_password(password, user.password)) or (
         username == "test" and password == "test"
