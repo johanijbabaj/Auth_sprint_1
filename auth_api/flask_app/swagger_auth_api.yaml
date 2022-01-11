@@ -80,7 +80,7 @@ paths:
         "400":
           description: "Invalid username/password supplied"
   /user/logout:
-    get:
+    delete:
       tags:
       - "user"
       summary: "Логаут из пользовательской сессии"

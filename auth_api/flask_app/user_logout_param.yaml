@@ -1,0 +1,15 @@
+produces:
+        - "application/json"
+security:
+        - APIKeyHeader: [ 'x-access-token' ]
+parameters:
+        - name: "access_token"
+          in: "query"
+          description: "access токен"
+          required: true
+          type: "string"
+responses:
+        "200":
+          description: "successful operation"
+        "400":
+          description: "Invalid access token"
