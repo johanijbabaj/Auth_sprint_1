@@ -1,3 +1,4 @@
+import datetime
 import uuid
 from typing import Optional
 
@@ -8,6 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID
 class User(db.Model):
     """Зарегистрированный в системе пользователь"""
 
+    __table_args__ = {"schema": "auth"}
     __tablename__ = "user"
 
     id = db.Column(
@@ -24,6 +26,8 @@ class User(db.Model):
     phone = db.Column(db.String)
     avatar_link = db.Column(db.String)
     address = db.Column(db.String)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
     groups = db.relationship(
         "UserGroup",
@@ -62,6 +66,7 @@ class User(db.Model):
 class Group(db.Model):
     """Пользовательская группа (роль)"""
 
+    __table_args__ = {"schema": "auth"}
     __tablename__ = "group"
 
     id = db.Column(
@@ -109,6 +114,7 @@ class Group(db.Model):
 
 
 class History(db.Model):
+    __table_args__ = {"schema": "auth"}
     __tablename__ = "history"
 
     id = db.Column(
@@ -128,6 +134,8 @@ class History(db.Model):
 class UserGroup(db.Model):
     """Членство пользователя в группе"""
 
+    __table_args__ = {"schema": "auth"}
+    __tablename__ = "user_group_rel"
     id = db.Column(
         UUID(as_uuid=True),
         primary_key=True,
@@ -135,5 +143,5 @@ class UserGroup(db.Model):
         unique=True,
         nullable=False,
     )
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("user.id"))
-    group_id = db.Column(UUID(as_uuid=True), db.ForeignKey("group.id"))
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("auth.user.id"))
+    group_id = db.Column(UUID(as_uuid=True), db.ForeignKey("auth.group.id"))

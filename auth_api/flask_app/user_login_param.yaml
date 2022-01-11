@@ -1,3 +1,5 @@
+tags:
+        - User
 parameters:
         - name: login
           in: query

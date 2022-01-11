@@ -1,8 +1,8 @@
 import datetime
 from http import HTTPStatus
 
-from auth_config import BASE_PATH, Config, app, jwt_redis, session
-from db_models import Group, User
+from auth_config import BASE_PATH, Config, app, db, jwt_redis
+from db_models import Group, User, UserGroup
 from flasgger.utils import swag_from
 from flask import request
 from flask.json import jsonify
@@ -16,6 +16,7 @@ from flask_jwt_extended import (
     verify_jwt_in_request,
 )
 from flask_script import Manager
+from password_hash import check_password, hash_password
 
 manager = Manager(app)
 jwt = JWTManager(app)
@@ -38,22 +39,45 @@ def list_groups():
     return jsonify(groups)
 
 
-# Gf@swag_from("swagger_auth_api.yaml")
-# @swag_from("user_login.yml")
-@swag_from(
-    "user_login_param.yaml"
-)  # FIXME: работают параметры пока только с таким файлом
+@swag_from("user_register.yaml", validation=True)
+@app.route("/user/register", methods=["POST"])
+def register():
+    """
+    Метод регистрации пользователя
+    """
+    obj = request.json
+    user = User.query.filter_by(email=obj["email"]).first()
+    if not user:
+        try:
+            obj["password"] = hash_password(obj["password"])
+            user = User(**obj)
+            db.session.add(user)
+            db.session.commit()
+            return jsonify({"msg": "User was successfully registered"}), HTTPStatus.OK
+
+        except Exception as err:
+            return jsonify({"msg": f"Unexpected error: {err}"}), HTTPStatus.CONFLICT
+
+    else:
+        return (
+            jsonify(
+                {"msg": "User had already been registered. Check the email, id, login"}
+            ),
+            HTTPStatus.CONFLICT,
+        )
+
+
+@swag_from("user_login_param.yaml")
 @app.route("/user/login", methods=["POST"])
 def login():
     """
     Метод при успешной авториазции возвращает пару ключей access и refreh токенов
-    FIXME: Предполгаю что нужно будет добавить еще запись и хранение токенов для последующей аутентификации
     """
     username = request.args.get("login", None)
     password = request.args.get("password", None)
-    user = session.query(User).filter(User.login == username).first()
+    user = User.query.filter(User.login == username).first()
 
-    if (user and user.password == password) or (
+    if (user and check_password(password, user.password)) or (
         username == "test" and password == "test"
     ):
         if username == "test":
@@ -77,12 +101,11 @@ def login():
 def refresh():
     """
     Обновление пары токенов при получении действительного refresh токена
-    #FIXME: необходимо добавить хранение отозванных refresh токенов
     """
     try:
         verify_jwt_in_request(refresh=True)
-    except:
-        return (jsonify({"msg": "Bad refresh token"}), HTTPStatus.UNAUTHORIZED)
+    except Exception as ex:
+        return (jsonify({"msg": f"Bad refresh token: {ex}"}), HTTPStatus.UNAUTHORIZED)
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity)
     refresh_token = create_refresh_token(identity=identity)
@@ -101,8 +124,8 @@ def logout():
     """
     try:
         verify_jwt_in_request()
-    except:
-        return (jsonify({"msg": "Bad access token"}), HTTPStatus.UNAUTHORIZED)
+    except Exception as ex:
+        return (jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED)
     jti = get_jwt()["jti"]
     jwt_redis_blocklist.set(jti, "", ex=Config.ACCESS_EXPIRES)
     return (
