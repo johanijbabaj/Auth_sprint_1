@@ -1,0 +1,48 @@
+#Создает нового пользователя
+#---
+#swagger: "2.0"
+tags:
+  - User
+parameters:
+  - name: User
+    in: body
+    schema:
+      $ref: '#/definitions/User'
+responses:
+  200:
+    description: OK
+    schema:
+      $ref: '#/definitions/User'
+definitions:
+  User:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      login:
+        type: "string"
+      email:
+        type: "string"
+        format: email
+      password:
+        type: "string"
+        format: "password"
+      full_name:
+        type: "string"
+      phone:
+        type: "string"
+      avatar_link:
+        type: "string"
+        format: "url"
+      address:
+        type: "string"
+        format: "string"
+      created_at:
+        type: "string"
+        format: "date-time"
+      updated_at:
+        type: "string"
+        format: "date-time"
+    xml:
+      name: "User"

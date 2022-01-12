@@ -4,8 +4,6 @@ from datetime import timedelta
 from flasgger import Swagger
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 
 import redis
 
@@ -35,11 +33,13 @@ class Config:
 app = Flask(__name__)
 app.config.from_object(Config())
 db = SQLAlchemy(app=app, session_options={"autoflush": False})
-dbschema = "auth,public"
-engine = create_engine(
-    Config.SQLALCHEMY_DATABASE_URI,
-    connect_args={"options": f"-csearch_path={dbschema}"},
-)
+
+# dbschema = "auth,public"
+# connect_args={"options": f"-csearch_path={dbschema}"}
+# engine = create_engine(
+#    Config.SQLALCHEMY_DATABASE_URI,
+#    connect_args={"options": f"-csearch_path={dbschema}"},
+# )
 jwt_redis = redis.Redis(
     host=str(os.getenv("REDIS_AUTH_HOST")),
     port=int(os.getenv("REDIS_AUTH_PORT", 6379)),
@@ -47,5 +47,4 @@ jwt_redis = redis.Redis(
     db=0,
     decode_responses=True,
 )
-session = Session(bind=engine)
 swagger = Swagger(app, template=Config.SWAGGER_TEMPLATE)
