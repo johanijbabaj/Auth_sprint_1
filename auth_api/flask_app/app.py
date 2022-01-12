@@ -99,7 +99,7 @@ def login():
     )
 
 
-@jwt_required(refresh=True)
+@jwt_required()
 @swag_from("user_refresh_param.yaml")
 @app.route(f"{BASE_PATH}/user/refresh", methods=["POST"])
 def refresh():
@@ -134,6 +134,30 @@ def logout():
     jwt_redis_blocklist.set(jti, "", ex=Config.ACCESS_EXPIRES)
     return (
         jsonify(msg="Access token revoked"),
+        HTTPStatus.OK,
+    )
+
+
+@jwt_required()
+@swag_from("user_account_post_param.yaml")
+@app.route(f"{BASE_PATH}/user/account/", methods=["POST"])
+def update():
+    """
+    Обновление данных пользователя
+    """
+    try:
+        verify_jwt_in_request()
+    except Exception as ex:
+        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
+    identity = get_jwt_identity()
+    user = User.query.get(identity)
+    if user is None:
+        return jsonify({"error": "user not found"}), HTTPStatus.NOT_FOUND
+    obj = request.json
+    obj["password"] = hash_password(obj["password"])
+    updated_user = user.from_json(obj)
+    return (
+        jsonify(msg=f"Update success: {updated_user}"),
         HTTPStatus.OK,
     )
 

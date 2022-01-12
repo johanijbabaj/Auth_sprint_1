@@ -1,0 +1,59 @@
+# Обновление данных пользователя (логин, email, пароль)
+#---
+#swagger: "2.0"
+tags:
+  - User
+produces:
+        - "application/json"
+security:
+        - APIKeyHeader: [ 'x-access-token' ]
+parameters:
+        - name: "user_id"
+          in: "path"
+          description: "ID обновляемого пользователя"
+          required: true
+          type: "string"
+          format: uuid
+        - name: User
+          in: body
+          description: "Обновленные данные пользователя"
+          required: true
+          schema:
+            $ref: '#/definitions/User'
+responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: '#/definitions/User'
+        "400":
+          description: "Invalid access token"
+definitions:
+  User:
+    type: "object"
+    properties:
+      login:
+        type: "string"
+      email:
+        type: "string"
+        format: email
+      password:
+        type: "string"
+        format: "password"
+      full_name:
+        type: "string"
+      phone:
+        type: "string"
+      avatar_link:
+        type: "string"
+        format: "url"
+      address:
+        type: "string"
+        format: "string"
+      created_at:
+        type: "string"
+        format: "date-time"
+      updated_at:
+        type: "string"
+        format: "date-time"
+    xml:
+      name: "User"

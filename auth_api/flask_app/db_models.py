@@ -1,4 +1,5 @@
 import datetime
+import json
 import uuid
 from typing import Optional
 
@@ -61,6 +62,17 @@ class User(db.Model):
         if url_prefix:
             obj["url"] = f"{url_prefix}/user/account/{self.login}"
         return obj
+
+    def from_json(self, json_obj):
+        """
+        Обновить запись пользователя из json
+
+        """
+        self.login = json_obj["login"]
+        self.email = json_obj["email"]
+        self.password = json_obj["password"]
+        db.session.commit()
+        return self
 
 
 class Group(db.Model):

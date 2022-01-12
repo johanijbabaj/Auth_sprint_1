@@ -1,3 +1,6 @@
+#Выход из всех сессий
+#---
+#swagger: "2.0"
 tags:
   - User
 produces:

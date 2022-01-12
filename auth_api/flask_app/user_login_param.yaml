@@ -1,3 +1,6 @@
+# Аутентификация пользователя
+#---
+#swagger: "2.0"
 tags:
         - User
 parameters:
