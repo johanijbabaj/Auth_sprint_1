@@ -4,7 +4,7 @@
 import bcrypt
 
 
-def hash_password(password_str: str):
+def hash_password(password_str):
     """
     Хэшируем и солим пароли
     :param password_str: Полученный от пользователя пароль

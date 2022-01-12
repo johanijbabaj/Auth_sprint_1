@@ -134,8 +134,8 @@ services:
     container_name: redis_auth
     volumes:
       - ./auth_api/redis_auth/conf/etc:/usr/local/etc/redis
-    ports:
-     - "6379:6379"
+    #ports:
+    # - "6379:6379"
     networks:
       - movies_network
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]

@@ -1,8 +1,10 @@
 """МОдуль основного приложения"""
+import datetime
+import sys
 from http import HTTPStatus
 
 from auth_config import BASE_PATH, Config, app, db, jwt_redis
-from db_models import Group, User
+from db_models import Group, History, User, UserGroup
 from flasgger.utils import swag_from
 from flask import request
 from flask.json import jsonify
@@ -79,7 +81,7 @@ def login():
     """
     username = request.args.get("login", None)
     password = request.args.get("password", None)
-    user = User.query.filter(User.login == username).first()
+    user = User.query.filter_by(login=username).first()
 
     if (user and check_password(password, user.password)) or (
         username == "test" and password == "test"
@@ -90,6 +92,13 @@ def login():
             user_identity = str(user.id)
         access_token = create_access_token(identity=user_identity)
         refresh_token = create_refresh_token(identity=user_identity)
+        if user:
+            # Добавить информацию о входе в историю
+            history = History(
+                user_id=user.id, useragent="unknown", timestamp=datetime.datetime.now()
+            )
+            db.session.add(history)
+            db.session.commit()
     else:
         return jsonify({"msg": "Bad username or password"}), HTTPStatus.UNAUTHORIZED
 
@@ -175,6 +184,21 @@ def check_if_token_is_revoked(jwt_header, jwt_payload):
     return token_in_redis is not None
 
 
+@app.route(f"{BASE_PATH}/groups/", methods=["POST"])
+@jwt_required()
+def create_group():
+    """
+    Создать новую группу
+    """
+    current_user = User.query.get(get_jwt_identity())
+    if not current_user or not current_user.is_admin():
+        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
+    group = Group.from_json(request.json)
+    db.session.add(group)
+    db.session.commit()
+    return jsonify(group.to_json())
+
+
 @app.route(f"{BASE_PATH}/group/<group_id>/", methods=["GET"])
 def get_group(group_id):
     """
@@ -184,6 +208,44 @@ def get_group(group_id):
     if group is None:
         return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
     return jsonify(group.to_json())
+
+
+@app.route(f"{BASE_PATH}/group/<group_id>/", methods=["DELETE"])
+@jwt_required()
+def del_group(group_id):
+    """
+    Удалить группу
+    """
+    current_user = User.query.get(get_jwt_identity())
+    if not current_user or not current_user.is_admin():
+        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
+    group = Group.query.get(group_id)
+    if group is None:
+        return jsonify({"result": "Group did not exist"})
+    db.session.delete(group)
+    db.session.commit()
+    return jsonify({"result": "Group deleted"})
+
+
+@app.route(f"{BASE_PATH}/group/<group_id>/", methods=["PUT"])
+@jwt_required()
+def update_group(group_id):
+    """
+    Изменить группу
+    """
+    current_user = User.query.get(get_jwt_identity())
+    if not current_user or not current_user.is_admin():
+        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
+    group = Group.query.get(group_id)
+    if group is None:
+        return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
+    if "name" in request.json:
+        group.name = request.json["name"]
+    if "description" in request.json:
+        group.name = request.json["description"]
+    db.session.add(group)
+    db.session.commit()
+    return jsonify({})
 
 
 @app.route(f"{BASE_PATH}/group/<group_id>/users/", methods=["GET"])
@@ -199,6 +261,25 @@ def list_group_users(group_id):
     for user in users.all():
         answer.append(user.to_json())
     return jsonify(answer)
+
+
+@app.route(f"{BASE_PATH}/group/<group_id>/users/", methods=["POST"])
+@jwt_required()
+def add_group_user(group_id):
+    """
+    Добавить пользователя в группу
+    """
+    current_user = User.query.get(get_jwt_identity())
+    if not current_user or not current_user.is_admin():
+        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
+    group = Group.query.get(group_id)
+    if group is None:
+        return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
+    user_id = request.json["user_id"]
+    membership = UserGroup(user_id=user_id, group_id=group_id)
+    db.session.add(membership)
+    db.session.commit()
+    return jsonify({"result": f"User {user_id} added to group {group_id}"})
 
 
 @app.route(f"{BASE_PATH}/users/", methods=["GET"])
@@ -223,7 +304,88 @@ def get_user(user_id):
     return jsonify(user.to_json())
 
 
+@app.route(f"{BASE_PATH}/group/<group_id>/user/<user_id>", methods=["GET"])
+def get_membership(group_id, user_id):
+    """
+    Получить информацию о членстве пользователя user_id в группе
+    group_id. Если пользователь в группу не входит, вернуть ответ
+    404. Иначе возвращается ответ следующего вида с кодом 200
+    {
+        'user_id': <user_id>,
+        'group_id': <group_id>
+    }
+    """
+    membership = (
+        UserGroup.query.filter_by(group_id=group_id).filter_by(user_id=user_id).first()
+    )
+    if membership is None:
+        return jsonify({"error": "user is not in the group"}), HTTPStatus.NOT_FOUND
+    return jsonify(membership.to_json())
+
+
+@app.route(f"{BASE_PATH}/group/<group_id>/user/<user_id>", methods=["DELETE"])
+@jwt_required()
+def del_membership(group_id, user_id):
+    """
+    Удалить пользователя из группы
+    """
+    current_user = User.query.get(get_jwt_identity())
+    if not current_user or not current_user.is_admin():
+        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
+    membership = (
+        UserGroup.query.filter_by(group_id=group_id).filter_by(user_id=user_id).first()
+    )
+    if membership is None:
+        return jsonify({"result": "user was not in the group"})
+    db.session.delete(membership)
+    db.session.commit()
+    return jsonify({"result": "user removed from the group"})
+
+
+@app.route(f"{BASE_PATH}/user/history", methods=["GET"])
+@jwt_required()
+def get_user_history():
+    """
+    Получить историю операций пользователя
+    """
+    current_user = User.query.get(get_jwt_identity())
+    if not current_user:
+        return jsonify({"error": "No such user"}), HTTPStatus.NOT_FOUND
+    history = current_user.get_history()
+    return jsonify([h.to_json() for h in history.all()])
+
+
+def db_initialize():
+    """
+    Первоначальная инициализация приложения авторизации
+
+    Инициализируем структуру таблиц, создаем группу
+    администраторов и одного пользователя, входящего
+    в нее.
+    """
+    # Следуат ли удалять имеющиеся данные?
+    # db.drop_all()
+    db.create_all()
+    admin_group = Group(name="admin", description="Administrators")
+    admin_user = User(
+        login="admin",
+        email="root@localhost",
+        password="",
+        full_name="Site administrator",
+    )
+    # FIXME: Пароль необходимо запросить с клавиатуры
+    admin_user.password = "admin"
+    db.session.add(admin_group)
+    db.session.add(admin_user)
+    db.session.commit()
+    # Только после первого коммита пользователь и группа получат
+    # автосгенерированные UUID
+    admin_membership = UserGroup(user_id=admin_user.id, group_id=admin_group.id)
+    db.session.add(admin_membership)
+    db.session.commit()
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 1 and sys.argv[0] == "--initialize":
+        db_initialize()
     app.run(host="0.0.0.0")
-    # manager.run()
-    # КАК РАБОТАТЬ С КОНСОЛЬНЫМ ЗАПУСКОМ?
