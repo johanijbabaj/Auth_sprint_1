@@ -1,0 +1,56 @@
+version: "3.7"
+
+services:
+  flask_auth_api:
+    build:
+      context: ../../auth_api/flask_app
+      dockerfile: Dockerfile
+    container_name: flask_auth_api
+    env_file:
+      - auth.env
+    volumes:
+      - ../../auth_api/flask_app:/auth_api/flask_app:ro
+    networks:
+      - movies_network
+    command: ["python", "app.py", "runserver", "--host", "0.0.0.0"]
+    depends_on:
+      - postgres_auth_test
+      - redis_auth_test
+
+  postgres_auth_test:
+    image: postgres:13-alpine
+    container_name: postgres_auth_test
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    env_file:
+      - db_auth.env
+    networks:
+      - movies_network
+
+  redis_auth_test:
+    build:
+      context: ../../auth_api/redis_auth
+      dockerfile: Dockerfile
+    container_name: redis_auth
+    volumes:
+      - ../../auth_api/redis_auth/conf/etc:/usr/local/etc/redis
+    networks:
+      - movies_network
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+
+  tests:
+    container_name: auth_api_test
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - flask_auth_api
+    env_file:
+        - tests.env
+    networks:
+      - movies_network
+    command: ["bash", "-c", "python utils/wait_for_api.py && pytest -s src/"]
+
+
+networks:
+  movies_network:
