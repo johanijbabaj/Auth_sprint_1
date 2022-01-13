@@ -221,6 +221,28 @@ paths:
           description: "Массив описаний групп"
           schema:
             $ref: "#/definitions/GroupList"
+  /group/{id}:
+    get:
+      tags:
+        - "group"
+      summary: "Получить данные по группе"
+      description: ""
+      operationId: "groupGet"
+      produces:
+        - "application/xml"
+        - "application/json"
+      parameters:
+        - in: "path"
+          name: "id"
+          type: "string"
+          format: "uuid"
+          required: true
+          description: "Идентификатор группы"
+      responses:
+        "200":
+          description: "Массив описания группы"
+          schema:
+            $ref: "#/definitions/Group"
   /group/delete/{id}:
     delete:
       tags:

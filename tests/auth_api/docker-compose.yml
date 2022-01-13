@@ -31,7 +31,7 @@ services:
     build:
       context: ../../auth_api/redis_auth
       dockerfile: Dockerfile
-    container_name: redis_auth
+    container_name: redis_auth_test
     volumes:
       - ../../auth_api/redis_auth/conf/etc:/usr/local/etc/redis
     networks:

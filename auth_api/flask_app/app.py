@@ -46,7 +46,7 @@ def list_groups():
     return jsonify(groups)
 
 
-@swag_from("user_register.yaml", validation=True)
+@swag_from("./schemes/user_register.yaml", validation=True)
 @app.route(f"{BASE_PATH}/user/register", methods=["POST"])
 def register():
     """
@@ -56,7 +56,7 @@ def register():
     user = User.query.filter_by(email=obj["email"]).first()
     if not user:
         try:
-            #obj["password"] = hash_password(obj["password"])
+            # obj["password"] = hash_password(obj["password"])
             user = User(**obj)
             db.session.add(user)
             db.session.commit()
@@ -74,7 +74,7 @@ def register():
         )
 
 
-@swag_from("user_login_param.yaml")
+@swag_from("./schemes/user_login_param.yaml")
 @app.route(f"{BASE_PATH}/user/login", methods=["POST"])
 def login():
     """
@@ -110,7 +110,7 @@ def login():
 
 
 @jwt_required()
-@swag_from("user_refresh_param.yaml")
+@swag_from("./schemes/user_refresh_param.yaml")
 @app.route(f"{BASE_PATH}/user/refresh", methods=["POST"])
 def refresh():
     """
@@ -130,7 +130,7 @@ def refresh():
 
 
 @jwt_required()
-@swag_from("user_logout_param.yaml")
+@swag_from("./schemes/user_logout_param.yaml")
 @app.route(f"{BASE_PATH}/user/logout", methods=["DELETE"])
 def logout():
     """
@@ -149,7 +149,7 @@ def logout():
 
 
 @jwt_required()
-@swag_from("user_account_post_param.yaml")
+@swag_from("./schemes/user_account_post_param.yaml")
 @app.route(f"{BASE_PATH}/user/account/", methods=["POST"])
 def update():
     """
@@ -185,12 +185,17 @@ def check_if_token_is_revoked(jwt_header, jwt_payload):
     return token_in_redis is not None
 
 
-@app.route(f"{BASE_PATH}/groups/", methods=["POST"])
 @jwt_required()
+@swag_from("./schemes/group_post.yaml")
+@app.route(f"{BASE_PATH}/group/", methods=["POST"])
 def create_group():
     """
     Создать новую группу
     """
+    try:
+        verify_jwt_in_request()
+    except Exception as ex:
+        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
     current_user = User.query.get(get_jwt_identity())
     if not current_user or not current_user.is_admin():
         return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
@@ -200,6 +205,7 @@ def create_group():
     return jsonify(group.to_json())
 
 
+@swag_from("./schemes/group_get.yaml")
 @app.route(f"{BASE_PATH}/group/<group_id>/", methods=["GET"])
 def get_group(group_id):
     """
@@ -211,12 +217,17 @@ def get_group(group_id):
     return jsonify(group.to_json())
 
 
-@app.route(f"{BASE_PATH}/group/<group_id>/", methods=["DELETE"])
 @jwt_required()
+@swag_from("./schemes/group_del.yaml")
+@app.route(f"{BASE_PATH}/group/<group_id>/", methods=["DELETE"])
 def del_group(group_id):
     """
     Удалить группу
     """
+    try:
+        verify_jwt_in_request()
+    except Exception as ex:
+        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
     current_user = User.query.get(get_jwt_identity())
     if not current_user or not current_user.is_admin():
         return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
@@ -228,12 +239,17 @@ def del_group(group_id):
     return jsonify({"result": "Group deleted"})
 
 
-@app.route(f"{BASE_PATH}/group/<group_id>/", methods=["PUT"])
 @jwt_required()
+@swag_from("./schemes/group_put.yaml")
+@app.route(f"{BASE_PATH}/group/<group_id>/", methods=["PUT"])
 def update_group(group_id):
     """
     Изменить группу
     """
+    try:
+        verify_jwt_in_request()
+    except Exception as ex:
+        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
     current_user = User.query.get(get_jwt_identity())
     if not current_user or not current_user.is_admin():
         return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
@@ -383,14 +399,14 @@ def db_initialize():
         full_name="Site administrator",
     )
     regular_user = User(
-        login='nobody',
-        email='nobody@localhost',
-        password_hash='',
-        full_name='Regular user'
+        login="nobody",
+        email="nobody@localhost",
+        password_hash="",
+        full_name="Regular user",
     )
     # Берем пароли из переменных окружения
-    admin_user.password = os.getenv('ADMIN_PASSWORD')
-    regular_user.password = os.getenv('NOBODY_PASSWORD')
+    admin_user.password = os.getenv("ADMIN_PASSWORD")
+    regular_user.password = os.getenv("NOBODY_PASSWORD")
     db.session.add(admin_group)
     db.session.add(admin_user)
     db.session.add(regular_user)
