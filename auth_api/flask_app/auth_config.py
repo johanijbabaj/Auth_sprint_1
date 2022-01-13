@@ -34,12 +34,9 @@ app = Flask(__name__)
 app.config.from_object(Config())
 db = SQLAlchemy(app=app, session_options={"autoflush": False})
 
-# dbschema = "auth,public"
-# connect_args={"options": f"-csearch_path={dbschema}"}
-# engine = create_engine(
-#    Config.SQLALCHEMY_DATABASE_URI,
-#    connect_args={"options": f"-csearch_path={dbschema}"},
-# )
+engine = db.create_engine(Config.SQLALCHEMY_DATABASE_URI, {})
+engine.execute("CREATE SCHEMA IF NOT EXISTS auth;")
+
 jwt_redis = redis.Redis(
     host=str(os.getenv("REDIS_AUTH_HOST")),
     port=int(os.getenv("REDIS_AUTH_PORT", 6379)),
