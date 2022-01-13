@@ -173,7 +173,7 @@ class History(db.Model):
         unique=True,
         nullable=False,
     )
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("user.id"))
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("auth.user.id"))
     useragent = db.Column(db.String, nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False)
 

@@ -1,8 +1,9 @@
 import datetime
+import os
 import sys
 from http import HTTPStatus
 
-from auth_config import BASE_PATH, Config, app, jwt_redis, session, db, jwt_redis
+from auth_config import BASE_PATH, Config, app, jwt_redis, db
 from db_models import Group, History, User, UserGroup
 from flasgger.utils import swag_from
 from flask import request
@@ -50,7 +51,7 @@ def register():
     user = User.query.filter_by(email=obj["email"]).first()
     if not user:
         try:
-            obj["password"] = hash_password(obj["password"])
+            #obj["password"] = hash_password(obj["password"])
             user = User(**obj)
             db.session.add(user)
             db.session.commit()
@@ -78,7 +79,7 @@ def login():
     password = request.args.get("password", None)
     user = User.query.filter_by(login=username).first()
 
-    if (user and check_password(password, user.password)) or (
+    if (user and user.check_password(password)) or (
         username == "test" and password == "test"
     ):
         if username == "test":
@@ -328,10 +329,18 @@ def db_initialize():
 
         Инициализируем структуру таблиц, создаем группу
         администраторов и одного пользователя, входящего
-        в нее.
+        в нее, а также одного пользователя не входящего
+        ни в какие группы. Пароли пользователей берутся
+        из переменных окружения ADMIN_PASSWORD и
+        NOBODY_PASSWORD.
+
+        Эта функция предназначена для начальной инициализации
+        базы и уничтожит все имеющиеся данные в ней
     """
-    # Следуат ли удалять имеющиеся данные?
-    # db.drop_all()
+    try:
+        db.drop_all()
+    except Exception:
+        pass
     db.create_all()
     admin_group = Group(
         name='admin',
@@ -343,10 +352,18 @@ def db_initialize():
         password_hash='',
         full_name='Site administrator'
     )
-    # FIXME: Пароль необходимо запросить с клавиатуры
-    admin_user.password = 'admin'
+    regular_user = User(
+        login='nobody',
+        email='nobody@localhost',
+        password_hash='',
+        full_name='Regular user'
+    )
+    # Берем пароли из переменных окружения
+    admin_user.password = os.getenv('ADMIN_PASSWORD')
+    regular_user.password = os.getenv('NOBODY_PASSWORD')
     db.session.add(admin_group)
     db.session.add(admin_user)
+    db.session.add(regular_user)
     db.session.commit()
     # Только после первого коммита пользователь и группа получат
     # автосгенерированные UUID
