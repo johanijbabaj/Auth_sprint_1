@@ -1,0 +1,43 @@
+#Создает новую группу
+#---
+#swagger: "2.0"
+tags:
+  - Group
+summary: "Создать новую группу"
+description: ""
+produces:
+      - "application/json"
+security:
+        - APIKeyHeader: [ 'x-access-token' ]
+parameters:
+      - name: Group
+        in: body
+        description: "Идентификатор группы"
+        schema:
+          $ref: '#/definitions/Group'
+responses:
+  200:
+    description: ОК
+    schema:
+      $ref: "#/definitions/Group"
+  401:
+    description: UNAUTHORIZED
+  403:
+    description: FORBIDDEN
+definitions:
+  Group:
+    type: "object"
+    properties:
+#      id:
+#        type: "string"
+#        format: "uuid"
+      name:
+        type: "string"
+      description:
+        type: "string"
+    xml:
+      name: "Group"
+  GroupList:
+    type: "array"
+    items:
+      $ref: "#/definitions/Group"
