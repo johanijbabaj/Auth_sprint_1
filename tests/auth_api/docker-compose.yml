@@ -12,7 +12,7 @@ services:
       - ../../auth_api/flask_app:/auth_api/flask_app:ro
     networks:
       - movies_network
-    command: ["python", "app.py", "runserver", "--host", "0.0.0.0"]
+    command: ["python", "app.py"]
     depends_on:
       - postgres_auth_test
       - redis_auth_test

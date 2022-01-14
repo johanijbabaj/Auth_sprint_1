@@ -1,4 +1,7 @@
-"""МОдуль основного приложения"""
+"""
+Основной модуль
+"""
+
 import datetime
 import os
 import sys
@@ -28,10 +31,6 @@ jwt_redis_blocklist = jwt_redis
 
 @app.route("/test", methods=["GET"])
 def test():
-    """
-    Тестовый роут
-    :return: It works!
-    """
     return "It works!"
 
 
@@ -83,8 +82,7 @@ def login():
     username = request.args.get("login", None)
     password = request.args.get("password", None)
     user = User.query.filter_by(login=username).first()
-
-    if (user and user.check_password(password)) or (
+    if (user and user.verify_password(password)) or (
         username == "test" and password == "test"
     ):
         if username == "test":
@@ -119,7 +117,7 @@ def refresh():
     try:
         verify_jwt_in_request(refresh=True)
     except Exception as ex:
-        return jsonify({"msg": f"Bad refresh token: {ex}"}), HTTPStatus.UNAUTHORIZED
+        return (jsonify({"msg": f"Bad refresh token: {ex}"}), HTTPStatus.UNAUTHORIZED)
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity)
     refresh_token = create_refresh_token(identity=identity)
@@ -139,7 +137,7 @@ def logout():
     try:
         verify_jwt_in_request()
     except Exception as ex:
-        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
+        return (jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED)
     jti = get_jwt()["jti"]
     jwt_redis_blocklist.set(jti, "", ex=Config.ACCESS_EXPIRES)
     return (
@@ -174,12 +172,6 @@ def update():
 
 @jwt.token_in_blocklist_loader
 def check_if_token_is_revoked(jwt_header, jwt_payload):
-    """
-    Проверяем был ли отозван токен
-    :param jwt_header: Заголовок JWT токена
-    :param jwt_payload: Полезные данные токвна
-    :return: TRUE/FALSE
-    """
     jti = jwt_payload["jti"]
     token_in_redis = jwt_redis_blocklist.get(jti)
     return token_in_redis is not None
@@ -293,6 +285,9 @@ def add_group_user(group_id):
     if group is None:
         return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
     user_id = request.json["user_id"]
+    user = User.query.get(user_id)
+    if user is None:
+        return jsonify({"error": "user not found"}), HTTPStatus.NOT_FOUND
     membership = UserGroup(user_id=user_id, group_id=group_id)
     db.session.add(membership)
     db.session.commit()
@@ -376,15 +371,15 @@ def db_initialize():
     """
     Первоначальная инициализация приложения авторизации
 
-        Инициализируем структуру таблиц, создаем группу
-        администраторов и одного пользователя, входящего
-        в нее, а также одного пользователя не входящего
-        ни в какие группы. Пароли пользователей берутся
-        из переменных окружения ADMIN_PASSWORD и
-        NOBODY_PASSWORD.
+    Инициализируем структуру таблиц, создаем группу
+    администраторов и одного пользователя, входящего
+    в нее, а также одного пользователя не входящего
+    ни в какие группы. Пароли пользователей берутся
+    из переменных окружения ADMIN_PASSWORD и
+    NOBODY_PASSWORD.
 
-        Эта функция предназначена для начальной инициализации
-        базы и уничтожит все имеющиеся данные в ней
+    Эта функция предназначена для начальной инициализации
+    базы и уничтожит все имеющиеся данные в ней
     """
     try:
         db.drop_all()
@@ -395,7 +390,7 @@ def db_initialize():
     admin_user = User(
         login="admin",
         email="root@localhost",
-        password="",
+        password_hash="",
         full_name="Site administrator",
     )
     regular_user = User(
@@ -419,6 +414,6 @@ def db_initialize():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 1 and sys.argv[0] == "--initialize":
+    if len(sys.argv) == 2 and sys.argv[1] == "--initialize":
         db_initialize()
     app.run(host="0.0.0.0")
