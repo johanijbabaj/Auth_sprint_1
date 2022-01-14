@@ -10,6 +10,7 @@ def hash_password(password_str):
     :param password_str: Полученный от пользователя пароль
     :return: Хэшированный и засоленный пароль для хранения в базе
     """
+
     hash_and_salt = bcrypt.hashpw(password_str.encode("utf-8"), bcrypt.gensalt())
     return hash_and_salt.decode("utf-8")
 

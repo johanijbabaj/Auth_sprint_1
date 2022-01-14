@@ -1,5 +1,4 @@
 import datetime
-import json
 import uuid
 from typing import Optional
 
@@ -59,7 +58,7 @@ class User(db.Model):
     def get_all_groups(self):
         """Список всех групп, в которых состоит пользователь"""
         return Group.query.join(UserGroup, UserGroup.group_id == Group.id).filter(
-            UserGroup.used_id == self.id
+            UserGroup.user_id == self.id
         )
 
     def is_admin(self):
@@ -83,32 +82,19 @@ class User(db.Model):
             obj["url"] = f"{url_prefix}/user/account/{self.login}"
         return obj
 
-    def from_json(self, json_obj):
-        """
-        Обновить запись пользователя из json
-
-        """
-        self.login = json_obj["login"]
-        self.email = json_obj["email"]
-        self.password_hash = json_obj["password"]
-        db.session.commit()
-        return self
-
     def get_history(self, since: Optional[datetime.datetime] = None):
         """
-        Вернуть историю действий этого пользователя
+            Вернуть историю действий этого пользователя
 
-        Если задан параметр since, то вернуть только действия, которые
-        были позже указанной метки времени
+            Если задан параметр since, то вернуть только действия, которые
+            были позже указанной метки времени
         """
         if since:
-            return (
-                History.query.filter(History.user_id == self.id)
-                .filter(History.timestamp >= since)
-                .order_by("timestamp")
-            )
+            return History.query.filter(History.user_id == self.id).filter(
+                History.timestamp >= since
+            ).order_by('timestamp')
         else:
-            return History.query.filter(user_id=self.id).order_by("timestamp")
+            return History.query.filter(History.user_id == self.id).order_by('timestamp')
 
 
 class Group(db.Model):
@@ -167,12 +153,12 @@ class Group(db.Model):
     @staticmethod
     def from_json(obj):
         """
-        Создать группу на основе словаря python
+            Создать группу на основе словаря python
         """
         return Group(
-            id=obj["id"],
-            name=obj["name"],
-            description=obj.get("description", obj["name"]),
+            id = obj['id'],
+            name = obj['name'],
+            description = obj.get('description', obj['name'])
         )
 
 
@@ -196,16 +182,15 @@ class History(db.Model):
 
     def to_json(self):
         return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "useragent": self.useragent,
-            "timestamp": self.timestamp.isoformat(),
+            'id': self.id,
+            'user_id': self.user_id,
+            'useragent': self.useragent,
+            'timestamp': self.timestamp.isoformat()
         }
 
 
 class UserGroup(db.Model):
     """Членство пользователя в группе"""
-
     __table_args__ = {"schema": "auth"}
     __tablename__ = "user_group_rel"
 
@@ -220,8 +205,11 @@ class UserGroup(db.Model):
     group_id = db.Column(UUID(as_uuid=True), db.ForeignKey("auth.group.id"))
 
     def __repr__(self):
-        return f"<User {self.user_id} in group {self.group_id}>"
+        return f'<User {self.user_id} in group {self.group_id}>'
 
     def to_json(self):
         """Информация о членстве пользователя в группе для сериализации в JSON"""
-        return {"user_id": self.user_id, "group_id": self.group_id}
+        return {
+            'user_id': self.user_id,
+            'group_id': self.group_id
+        }

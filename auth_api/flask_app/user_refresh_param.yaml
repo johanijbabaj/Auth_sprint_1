@@ -1,6 +1,3 @@
-#Обновляет refresh токен
-#---
-#swagger: "2.0"
 tags:
         - User
 produces:
