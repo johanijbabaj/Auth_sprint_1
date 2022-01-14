@@ -31,7 +31,7 @@ paths:
       - "application/xml"
       - "application/json"
       parameters:
-      - in: body
+      - in: "body"
         name: "body"
         description: "Created user object"
         required: true
@@ -43,7 +43,7 @@ paths:
         "400":
           description: "User is already registered"
   /user/login:
-    get:
+    post:
       tags:
       - "user"
       summary: "Авторизация пользователя в системе"
@@ -80,7 +80,7 @@ paths:
         "400":
           description: "Invalid username/password supplied"
   /user/logout:
-    get:
+    delete:
       tags:
       - "user"
       summary: "Логаут из пользовательской сессии"
@@ -112,20 +112,20 @@ paths:
       responses:
         default:
           description: "successful operation"
-  /user/account/{username}:
+  /user/account/{user_id}:
     get:
       tags:
       - "user"
       summary: "Получение инфомарции о пользователе"
       description: ""
-      operationId: "getUserByName"
+      operationId: "getUserByID"
       produces:
       - "application/xml"
       - "application/json"
       parameters:
-      - name: "username"
+      - name: "user_id"
         in: "path"
-        description: "Перадется имя пользователя для получения инфомарции по пользователю"
+        description: "Перадется ID пользователя для получения инфомарции по пользователю"
         required: true
         type: "string"
       responses:
@@ -147,9 +147,9 @@ paths:
       - "application/xml"
       - "application/json"
       parameters:
-      - name: "username"
+      - name: "user_id"
         in: "path"
-        description: "Логин обновляемого пользователя"
+        description: "ID обновляемого пользователя"
         required: true
         type: "string"
       - in: "body"
@@ -188,8 +188,8 @@ paths:
       - "application/xml"
       - "application/json"
       parameters:
-      - in: "body"
-        name: "body"
+      - name: "body"
+        in: "body"
         description: "Описание группы"
         required: true
         schema:
@@ -221,6 +221,28 @@ paths:
           description: "Массив описаний групп"
           schema:
             $ref: "#/definitions/GroupList"
+  /group/{id}:
+    get:
+      tags:
+        - "group"
+      summary: "Получить данные по группе"
+      description: ""
+      operationId: "groupGet"
+      produces:
+        - "application/xml"
+        - "application/json"
+      parameters:
+        - in: "path"
+          name: "id"
+          type: "string"
+          format: "uuid"
+          required: true
+          description: "Идентификатор группы"
+      responses:
+        "200":
+          description: "Массив описания группы"
+          schema:
+            $ref: "#/definitions/Group"
   /group/delete/{id}:
     delete:
       tags:

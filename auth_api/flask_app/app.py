@@ -3,6 +3,7 @@
 """
 
 import datetime
+import logging
 import os
 import sys
 from http import HTTPStatus
@@ -34,6 +35,7 @@ def test():
     return "It works!"
 
 
+@swag_from("./schemes/groups_get.yaml")
 @app.route(f"{BASE_PATH}/groups/", methods=["GET"])
 def list_groups():
     """
@@ -107,7 +109,7 @@ def login():
     )
 
 
-@jwt_required()
+@jwt_required(refresh=True)
 @swag_from("./schemes/user_refresh_param.yaml")
 @app.route(f"{BASE_PATH}/user/refresh", methods=["POST"])
 def refresh():
@@ -382,9 +384,10 @@ def db_initialize():
     базы и уничтожит все имеющиеся данные в ней
     """
     try:
+        db.close_all_sessions()
         db.drop_all()
-    except Exception:
-        pass
+    except Exception as ex:
+        logging.error(f"we have a problem: {ex}")
     db.create_all()
     admin_group = Group(name="admin", description="Administrators")
     admin_user = User(
@@ -414,6 +417,13 @@ def db_initialize():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 2 and sys.argv[1] == "--initialize":
-        db_initialize()
+    # Инициалиазции базы
+    try:
+        user = User.query.filter_by(login="admin").first()
+    except BaseException as ex:
+        # Проверяем  по содержимому ошибки созданы ли таблицы
+        if "(psycopg2.errors.UndefinedTable)" in ex.args[0]:
+            logging.info(f"initializing : {ex}")
+            db_initialize()
+        logging.error(f"Unknown error: {ex}")
     app.run(host="0.0.0.0")
