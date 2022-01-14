@@ -1,0 +1,38 @@
+#Получить данные по группе
+#---
+#swagger: "2.0"
+tags:
+  - Group
+summary: "Получить данные по группе"
+description: ""
+produces:
+      - "application/json"
+parameters:
+      - name: "group_id"
+        in: "path"
+        type: "string"
+        format: "uuid"
+        required: true
+        description: "Идентификатор группы"
+responses:
+      "200":
+        description: "Массив описания группы"
+        schema:
+          $ref: "#/definitions/Group"
+definitions:
+  Group:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      name:
+        type: "string"
+      description:
+        type: "string"
+    xml:
+      name: "Group"
+  GroupList:
+    type: "array"
+    items:
+      $ref: "#/definitions/Group"

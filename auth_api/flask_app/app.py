@@ -1,9 +1,13 @@
+"""
+Основной модуль
+"""
+
 import datetime
 import os
 import sys
 from http import HTTPStatus
 
-from auth_config import BASE_PATH, Config, app, jwt_redis, db
+from auth_config import BASE_PATH, Config, app, db, jwt_redis
 from db_models import Group, History, User, UserGroup
 from flasgger.utils import swag_from
 from flask import request
@@ -41,7 +45,7 @@ def list_groups():
     return jsonify(groups)
 
 
-@swag_from("user_register.yaml", validation=True)
+@swag_from("./schemes/user_register.yaml", validation=True)
 @app.route(f"{BASE_PATH}/user/register", methods=["POST"])
 def register():
     """
@@ -51,7 +55,7 @@ def register():
     user = User.query.filter_by(email=obj["email"]).first()
     if not user:
         try:
-            #obj["password"] = hash_password(obj["password"])
+            # obj["password"] = hash_password(obj["password"])
             user = User(**obj)
             db.session.add(user)
             db.session.commit()
@@ -69,7 +73,7 @@ def register():
         )
 
 
-@swag_from("user_login_param.yaml")
+@swag_from("./schemes/user_login_param.yaml")
 @app.route(f"{BASE_PATH}/user/login", methods=["POST"])
 def login():
     """
@@ -90,9 +94,7 @@ def login():
         if user:
             # Добавить информацию о входе в историю
             history = History(
-                user_id=user.id,
-                useragent='unknown',
-                timestamp=datetime.datetime.now()
+                user_id=user.id, useragent="unknown", timestamp=datetime.datetime.now()
             )
             db.session.add(history)
             db.session.commit()
@@ -105,9 +107,9 @@ def login():
     )
 
 
-@jwt_required(refresh=True)
-@swag_from("user_refresh_param.yaml")
-@app.route("/user/refresh", methods=["POST"])
+@jwt_required()
+@swag_from("./schemes/user_refresh_param.yaml")
+@app.route(f"{BASE_PATH}/user/refresh", methods=["POST"])
 def refresh():
     """
     Обновление пары токенов при получении действительного refresh токена
@@ -126,8 +128,8 @@ def refresh():
 
 
 @jwt_required()
-@swag_from("user_logout_param.yaml")
-@app.route("/user/logout", methods=["DELETE"])
+@swag_from("./schemes/user_logout_param.yaml")
+@app.route(f"{BASE_PATH}/user/logout", methods=["DELETE"])
 def logout():
     """
     Выход пользователя из аккаунта
@@ -144,6 +146,30 @@ def logout():
     )
 
 
+@jwt_required()
+@swag_from("./schemes/user_account_post_param.yaml")
+@app.route(f"{BASE_PATH}/user/account/", methods=["POST"])
+def update():
+    """
+    Обновление данных пользователя
+    """
+    try:
+        verify_jwt_in_request()
+    except Exception as ex:
+        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
+    identity = get_jwt_identity()
+    user = User.query.get(identity)
+    if user is None:
+        return jsonify({"error": "user not found"}), HTTPStatus.NOT_FOUND
+    obj = request.json
+    obj["password"] = hash_password(obj["password"])
+    updated_user = user.from_json(obj)
+    return (
+        jsonify(msg=f"Update success: {updated_user}"),
+        HTTPStatus.OK,
+    )
+
+
 @jwt.token_in_blocklist_loader
 def check_if_token_is_revoked(jwt_header, jwt_payload):
     jti = jwt_payload["jti"]
@@ -151,12 +177,17 @@ def check_if_token_is_revoked(jwt_header, jwt_payload):
     return token_in_redis is not None
 
 
-@app.route(f"{BASE_PATH}/groups/", methods=['POST'])
 @jwt_required()
+@swag_from("./schemes/group_post.yaml")
+@app.route(f"{BASE_PATH}/group/", methods=["POST"])
 def create_group():
     """
-        Создать новую группу
+    Создать новую группу
     """
+    try:
+        verify_jwt_in_request()
+    except Exception as ex:
+        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
     current_user = User.query.get(get_jwt_identity())
     if not current_user or not current_user.is_admin():
         return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
@@ -166,7 +197,8 @@ def create_group():
     return jsonify(group.to_json())
 
 
-@app.route(f"{BASE_PATH}/group/<group_id>/", methods=['GET'])
+@swag_from("./schemes/group_get.yaml")
+@app.route(f"{BASE_PATH}/group/<group_id>/", methods=["GET"])
 def get_group(group_id):
     """
     Получить информацию о группе
@@ -177,12 +209,17 @@ def get_group(group_id):
     return jsonify(group.to_json())
 
 
-@app.route(f"{BASE_PATH}/group/<group_id>/", methods=['DELETE'])
 @jwt_required()
+@swag_from("./schemes/group_del.yaml")
+@app.route(f"{BASE_PATH}/group/<group_id>/", methods=["DELETE"])
 def del_group(group_id):
     """
-        Удалить группу
+    Удалить группу
     """
+    try:
+        verify_jwt_in_request()
+    except Exception as ex:
+        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
     current_user = User.query.get(get_jwt_identity())
     if not current_user or not current_user.is_admin():
         return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
@@ -194,28 +231,33 @@ def del_group(group_id):
     return jsonify({"result": "Group deleted"})
 
 
-@app.route(f"{BASE_PATH}/group/<group_id>/", methods=['PUT'])
 @jwt_required()
+@swag_from("./schemes/group_put.yaml")
+@app.route(f"{BASE_PATH}/group/<group_id>/", methods=["PUT"])
 def update_group(group_id):
     """
-        Изменить группу
+    Изменить группу
     """
+    try:
+        verify_jwt_in_request()
+    except Exception as ex:
+        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
     current_user = User.query.get(get_jwt_identity())
     if not current_user or not current_user.is_admin():
         return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
     group = Group.query.get(group_id)
     if group is None:
         return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
-    if 'name' in request.json:
-        group.name = request.json['name']
-    if 'description' in request.json:
-        group.name = request.json['description']
+    if "name" in request.json:
+        group.name = request.json["name"]
+    if "description" in request.json:
+        group.name = request.json["description"]
     db.session.add(group)
     db.session.commit()
     return jsonify({})
 
 
-@app.route(f"{BASE_PATH}/group/<group_id>/users/", methods=['GET'])
+@app.route(f"{BASE_PATH}/group/<group_id>/users/", methods=["GET"])
 def list_group_users(group_id):
     """
     Список пользователей, входящих в определенную группу.
@@ -230,11 +272,11 @@ def list_group_users(group_id):
     return jsonify(answer)
 
 
-@app.route(f"{BASE_PATH}/group/<group_id>/users/", methods=['POST'])
+@app.route(f"{BASE_PATH}/group/<group_id>/users/", methods=["POST"])
 @jwt_required()
 def add_group_user(group_id):
     """
-        Добавить пользователя в группу
+    Добавить пользователя в группу
     """
     current_user = User.query.get(get_jwt_identity())
     if not current_user or not current_user.is_admin():
@@ -242,14 +284,14 @@ def add_group_user(group_id):
     group = Group.query.get(group_id)
     if group is None:
         return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
-    user_id = request.json['user_id']
+    user_id = request.json["user_id"]
     user = User.query.get(user_id)
     if user is None:
         return jsonify({"error": "user not found"}), HTTPStatus.NOT_FOUND
     membership = UserGroup(user_id=user_id, group_id=group_id)
     db.session.add(membership)
     db.session.commit()
-    return jsonify({'result': f"User {user_id} added to group {group_id}"})
+    return jsonify({"result": f"User {user_id} added to group {group_id}"})
 
 
 @app.route(f"{BASE_PATH}/users/", methods=["GET"])
@@ -274,49 +316,49 @@ def get_user(user_id):
     return jsonify(user.to_json())
 
 
-@app.route(f"{BASE_PATH}/group/<group_id>/user/<user_id>", methods=['GET'])
+@app.route(f"{BASE_PATH}/group/<group_id>/user/<user_id>", methods=["GET"])
 def get_membership(group_id, user_id):
     """
-        Получить информацию о членстве пользователя user_id в группе
-        group_id. Если пользователь в группу не входит, вернуть ответ
-        404. Иначе возвращается ответ следующего вида с кодом 200
-        {
-            'user_id': <user_id>,
-            'group_id': <group_id>
-        }
+    Получить информацию о членстве пользователя user_id в группе
+    group_id. Если пользователь в группу не входит, вернуть ответ
+    404. Иначе возвращается ответ следующего вида с кодом 200
+    {
+        'user_id': <user_id>,
+        'group_id': <group_id>
+    }
     """
-    membership = UserGroup.query.filter_by(
-        group_id=group_id
-    ).filter_by(user_id=user_id).first()
+    membership = (
+        UserGroup.query.filter_by(group_id=group_id).filter_by(user_id=user_id).first()
+    )
     if membership is None:
-        return jsonify({'error': 'user is not in the group'}), HTTPStatus.NOT_FOUND
+        return jsonify({"error": "user is not in the group"}), HTTPStatus.NOT_FOUND
     return jsonify(membership.to_json())
 
 
-@app.route(f"{BASE_PATH}/group/<group_id>/user/<user_id>", methods=['DELETE'])
+@app.route(f"{BASE_PATH}/group/<group_id>/user/<user_id>", methods=["DELETE"])
 @jwt_required()
 def del_membership(group_id, user_id):
     """
-        Удалить пользователя из группы
+    Удалить пользователя из группы
     """
     current_user = User.query.get(get_jwt_identity())
     if not current_user or not current_user.is_admin():
         return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
-    membership = UserGroup.query.filter_by(
-        group_id=group_id
-    ).filter_by(user_id=user_id).first()
+    membership = (
+        UserGroup.query.filter_by(group_id=group_id).filter_by(user_id=user_id).first()
+    )
     if membership is None:
-        return jsonify({'result': 'user was not in the group'})
+        return jsonify({"result": "user was not in the group"})
     db.session.delete(membership)
     db.session.commit()
-    return jsonify({'result': 'user removed from the group'})
+    return jsonify({"result": "user removed from the group"})
 
 
-@app.route(f"{BASE_PATH}/user/history", methods=['GET'])
+@app.route(f"{BASE_PATH}/user/history", methods=["GET"])
 @jwt_required()
 def get_user_history():
     """
-        Получить историю операций пользователя
+    Получить историю операций пользователя
     """
     current_user = User.query.get(get_jwt_identity())
     if not current_user:
@@ -327,52 +369,46 @@ def get_user_history():
 
 def db_initialize():
     """
-        Первоначальная инициализация приложения авторизации
+    Первоначальная инициализация приложения авторизации
 
-        Инициализируем структуру таблиц, создаем группу
-        администраторов и одного пользователя, входящего
-        в нее, а также одного пользователя не входящего
-        ни в какие группы. Пароли пользователей берутся
-        из переменных окружения ADMIN_PASSWORD и
-        NOBODY_PASSWORD.
+    Инициализируем структуру таблиц, создаем группу
+    администраторов и одного пользователя, входящего
+    в нее, а также одного пользователя не входящего
+    ни в какие группы. Пароли пользователей берутся
+    из переменных окружения ADMIN_PASSWORD и
+    NOBODY_PASSWORD.
 
-        Эта функция предназначена для начальной инициализации
-        базы и уничтожит все имеющиеся данные в ней
+    Эта функция предназначена для начальной инициализации
+    базы и уничтожит все имеющиеся данные в ней
     """
     try:
         db.drop_all()
     except Exception:
         pass
     db.create_all()
-    admin_group = Group(
-        name='admin',
-        description='Administrators'
-    )
+    admin_group = Group(name="admin", description="Administrators")
     admin_user = User(
-        login='admin',
-        email='root@localhost',
-        password_hash='',
-        full_name='Site administrator'
+        login="admin",
+        email="root@localhost",
+        password_hash="",
+        full_name="Site administrator",
     )
     regular_user = User(
-        login='nobody',
-        email='nobody@localhost',
-        password_hash='',
-        full_name='Regular user'
+        login="nobody",
+        email="nobody@localhost",
+        password_hash="",
+        full_name="Regular user",
     )
     # Берем пароли из переменных окружения
-    admin_user.password = os.getenv('ADMIN_PASSWORD')
-    regular_user.password = os.getenv('NOBODY_PASSWORD')
+    admin_user.password = os.getenv("ADMIN_PASSWORD")
+    regular_user.password = os.getenv("NOBODY_PASSWORD")
     db.session.add(admin_group)
     db.session.add(admin_user)
     db.session.add(regular_user)
     db.session.commit()
     # Только после первого коммита пользователь и группа получат
     # автосгенерированные UUID
-    admin_membership = UserGroup(
-        user_id=admin_user.id,
-        group_id=admin_group.id
-    )
+    admin_membership = UserGroup(user_id=admin_user.id, group_id=admin_group.id)
     db.session.add(admin_membership)
     db.session.commit()
 
