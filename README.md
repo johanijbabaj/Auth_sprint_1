@@ -9,9 +9,9 @@
 - ORM модели:
 /flask_app/db_models.py
 
-#Информация для ревьювера
+# Информация для ревьювера
 
-##Запуск основного docker-compose с сервисами авториазции:
+## Запуск основного docker-compose с сервисами авториазции:
 
 [here](docker-compose.yml)
 Предварительно:
@@ -20,7 +20,7 @@
 
 После запуска по адресу [url](http://flask_auth_api:5000/apidocs/) swagger схема с описанием для проверки работы сервисов
 
-##Запуск docker-compose c тестами:
+## Запуск docker-compose c тестами:
 
 [here](tests/auth_api/docker-compose.yml)
 Предварительно:
