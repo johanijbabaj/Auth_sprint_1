@@ -1,0 +1,31 @@
+#Получить список групп
+#---
+#swagger: "2.0"
+tags:
+  - Group
+summary: "Получить данные групп"
+description: ""
+produces:
+      - "application/json"
+responses:
+      "200":
+        description: "Массив описания группы"
+        schema:
+          $ref: "#/definitions/GroupList"
+definitions:
+  Group:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      name:
+        type: "string"
+      description:
+        type: "string"
+    xml:
+      name: "Group"
+  GroupList:
+    type: "array"
+    items:
+      $ref: "#/definitions/Group"

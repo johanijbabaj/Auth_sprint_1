@@ -13,6 +13,12 @@ services:
     networks:
       - movies_network
     command: ["python", "app.py"]
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
     depends_on:
       - postgres_auth_test
       - redis_auth_test

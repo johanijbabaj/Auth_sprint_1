@@ -7,7 +7,7 @@ AUTH_API_HOST = os.getenv("AUTH_API_HOST", "flask_auth_api:5000")
 
 
 def test_group_list():
-    ans = requests.get(f"http://{AUTH_API_HOST}/v1/group/")
+    ans = requests.get(f"http://{AUTH_API_HOST}/v1/groups/")
     assert ans.status_code == 200
     data = ans.json()
     assert isinstance(data, list)
@@ -27,13 +27,8 @@ def test_create_group_no_permissions():
 
 def test_create_delete_group():
     """
-    <<<<<<< HEAD
-            Создать группу, убедиться, что она возвращается в списке
-            всех групп и удалить ее. Для этого войти как администратор
-    =======
-        Создать группу, убедиться, что она возвращается в списке
-        всех групп и удалить ее
-    >>>>>>> main
+    Создать группу, убедиться, что она возвращается в списке
+    всех групп и удалить ее. Для этого войти как администратор
     """
     gid = "23977ba2-70b9-11ec-8215-83c9c808fe75"
     gname = "Тестовая группа"
@@ -52,7 +47,7 @@ def test_create_delete_group():
     assert ans.status_code == 404
     # Создаем группу
     ans = requests.post(
-        f"http://{AUTH_API_HOST}/v1/groups/",
+        f"http://{AUTH_API_HOST}/v1/group/",
         json={"id": gid, "name": gname, "description": gdescription},
         headers={"Authorization": "Bearer " + token},
     )
@@ -96,7 +91,7 @@ def test_nobody_create_group():
     assert ans.status_code == 404
     # Пытаемся создать группу, но должно не получиться
     ans = requests.post(
-        f"http://{AUTH_API_HOST}/v1/groups/",
+        f"http://{AUTH_API_HOST}/v1/group/",
         json={"id": gid, "name": gname, "description": gdescription},
         headers={"Authorization": "Bearer " + token},
     )
