@@ -48,7 +48,7 @@ def test_create_delete_group():
     # Создаем группу
     ans = requests.post(
         f"http://{AUTH_API_HOST}/v1/group/",
-        json={"id": gid, "name": gname, "description": gdescription},
+        json={"name": gname, "description": gdescription},
         headers={"Authorization": "Bearer " + token},
     )
     assert ans.status_code == 200

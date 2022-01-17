@@ -1,6 +1,8 @@
 from datetime import datetime
 from http import HTTPStatus
 
+from auth_config import Config, db, jwt, jwt_redis
+from db_models import Group, History, User
 from flasgger.utils import swag_from
 from flask import Blueprint, render_template, request
 from flask.json import jsonify
@@ -12,10 +14,7 @@ from flask_jwt_extended import (
     jwt_required,
     verify_jwt_in_request,
 )
-
-from auth_api.flask_app.auth_config import Config, db, jwt, jwt_redis
-from auth_api.flask_app.db_models import Group, History, User
-from auth_api.flask_app.password_hash import check_password, hash_password
+from password_hash import check_password, hash_password
 
 user_bp = Blueprint("user_bp", __name__)
 jwt_redis_blocklist = jwt_redis
@@ -70,7 +69,7 @@ def login():
         if user:
             # Добавить информацию о входе в историю
             history = History(
-                user_id=user.id, useragent="unknown", timestamp=datetime.datetime.now()
+                user_id=user.id, useragent="unknown", timestamp=datetime.now()
             )
             db.session.add(history)
             db.session.commit()

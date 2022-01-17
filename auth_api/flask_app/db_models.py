@@ -23,30 +23,6 @@ user_group = db.Table(
 )
 
 
-# class UserGroup(db.Model):
-#     """Членство пользователя в группе"""
-#     __table_args__ = {"schema": "auth", "extend_existing": True}
-#     __tablename__ = "user_group_rel"
-#
-#     id = db.Column(
-#         UUID(as_uuid=True),
-#         primary_key=True,
-#         default=uuid.uuid4,
-#         unique=True,
-#         nullable=False,
-#     )
-#     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("auth.user.id"))
-#     group_id = db.Column(UUID(as_uuid=True), db.ForeignKey("auth.group.id"))
-#     user = db.relationship(User, backref=db.backref("user_group_rel", lazy="joined", cascade="all, delete-orphan"))
-#     group = db.relationship(Group, backref=db.backref("user_group_rel", lazy="joined", cascade="all, delete-orphan"))
-#         #lazy="dynamic",
-#         #
-#
-#     def __repr__(self):
-#         return f'<User {self.user_id} in group {self.group_id}>'
-#
-
-
 class User(db.Model):
     """Зарегистрированный в системе пользователь"""
 
@@ -71,10 +47,11 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
     groups = db.relationship(
-        "User",
+        "Group",
         secondary=user_group,
         lazy="subquery",
-        backref=db.backref("users", lazy=True),
+        back_populates="users"
+        # backref=db.backref("groups", lazy=True),
     )
 
     # backref=db.backref("user", lazy="joined"),
@@ -105,8 +82,8 @@ class User(db.Model):
 
     def is_admin(self):
         """Состоит ли пользователь в группе администраторов"""
-        groups = self.groups()
-        for g in groups.all():
+        groups = self.groups
+        for g in groups:
             if g.is_admin():
                 return True
         return False
@@ -159,7 +136,13 @@ class Group(db.Model):
     name = db.Column(db.String, unique=True, nullable=False)
     description = db.Column(db.String, nullable=False)
 
-    users = db.relationship("Group", secondary=user_group)
+    users = db.relationship(
+        "User",
+        secondary=user_group,
+        lazy="subquery",
+        back_populates="groups"
+        # backref=db.backref("users", lazy=True),
+    )
 
     # backref=db.backref("group", lazy="joined"),
     # lazy="dynamic",

@@ -1,13 +1,11 @@
 from http import HTTPStatus
 
+from auth_config import db
+from db_models import Group, User
 from flasgger.utils import swag_from
 from flask import Blueprint, render_template, request
 from flask.json import jsonify
 from flask_jwt_extended import get_jwt_identity, jwt_required, verify_jwt_in_request
-
-# , UserGroup
-from auth_api.flask_app.auth_config import db
-from auth_api.flask_app.db_models import Group, User
 
 group_bp = Blueprint("group_bp", __name__)
 
@@ -123,9 +121,8 @@ def add_group_user(group_id):
     user = User.query.get(user_id)
     if user is None:
         return jsonify({"error": "user not found"}), HTTPStatus.NOT_FOUND
-    membership = ""
-    # membership = UserGroup(user_id=user_id, group_id=group_id)
-    db.session.add(membership)
+    group.users.append(user)
+    db.session.add(group)
     db.session.commit()
     return jsonify({"result": f"User {user_id} added to group {group_id}"})
 
@@ -141,13 +138,15 @@ def get_membership(group_id, user_id):
         'group_id': <group_id>
     }
     """
-    membership = ""
-    # membership = (
-    #    UserGroup.query.filter_by(group_id=group_id).filter_by(user_id=user_id).first()
-    # )
-    if membership is None:
+    group = Group.query.get(group_id)
+    if group is None:
+        return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
+    user = User.query.get(user_id)
+    if user is None:
+        return jsonify({"error": "user not found"}), HTTPStatus.NOT_FOUND
+    if user not in group.users.any().all():
         return jsonify({"error": "user is not in the group"}), HTTPStatus.NOT_FOUND
-    return jsonify(membership.to_json())
+    return jsonify({"user_id": user_id, "group_id": group_id})
 
 
 @group_bp.route("/<group_id>/user/<user_id>", methods=["DELETE"])
@@ -159,12 +158,16 @@ def del_membership(group_id, user_id):
     current_user = User.query.get(get_jwt_identity())
     if not current_user or not current_user.is_admin():
         return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
-    membership = ""
-    # (
-    #    UserGroup.query.filter_by(group_id=group_id).filter_by(user_id=user_id).first()
-    # )
-    if membership is None:
+    user = User.query.get(user_id)
+    if user is None:
+        return jsonify({"error": "user not found"}), HTTPStatus.NOT_FOUND
+    group = Group.query.get(group_id)
+    if group is None:
+        return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
+    if user in group.users.any():
+        group.users.remove(user)
+        db.session.add(group)
+        db.session.commit()
+        return jsonify({"result": "user removed from the group"})
+    else:
         return jsonify({"result": "user was not in the group"})
-    db.session.delete(membership)
-    db.session.commit()
-    return jsonify({"result": "user removed from the group"})

@@ -1,5 +1,6 @@
 from http import HTTPStatus
 
+from db_models import User
 from flasgger.utils import swag_from
 from flask import Blueprint, render_template, request
 from flask.json import jsonify
@@ -12,8 +13,6 @@ from flask_jwt_extended import (
     jwt_required,
     verify_jwt_in_request,
 )
-
-from auth_api.flask_app.db_models import User
 
 users_bp = Blueprint("users_bp", __name__)
 
