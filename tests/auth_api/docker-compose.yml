@@ -10,8 +10,9 @@ services:
       - auth.env
     volumes:
       - ../../auth_api/flask_app:/auth_api/flask_app:ro
-    #command: ["python", "app.py"]
-    command: ["python", "app.py", "runserver", "--host", "0.0.0.0"]
+    networks:
+      - movies_network
+    command: ["python", "app.py", "--reinitialize"]
     deploy:
       restart_policy:
         condition: on-failure
@@ -21,9 +22,6 @@ services:
     depends_on:
       - postgres_auth_test
       - redis_auth_test
-    networks:
-      - movies_network
-
 
   postgres_auth_test:
     image: postgres:13-alpine
@@ -56,10 +54,10 @@ services:
     depends_on:
       - flask_auth_api
     env_file:
-      - tests.env
+        - tests.env
     networks:
       - movies_network
-    command: ["bash", "-c", "python utils/wait_for_api.py && pytest -s src/"]
+    command: ["bash", "-c", "PYTHONPATH=. python utils/wait_for_api.py && pytest -s src/"]
 
 
 networks:

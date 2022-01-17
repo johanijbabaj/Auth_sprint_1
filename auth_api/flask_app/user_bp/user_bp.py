@@ -82,7 +82,7 @@ def login():
     )
 
 
-@jwt_required(refresh=True)
+# @jwt_required(refresh=True)
 @swag_from("../schemes/user_refresh_param.yaml")
 @user_bp.route("/refresh", methods=["POST"])
 def refresh():
@@ -102,7 +102,7 @@ def refresh():
     )
 
 
-@jwt_required()
+# @jwt_required()
 @swag_from("../schemes/user_logout_param.yaml")
 @user_bp.route("/logout", methods=["DELETE"])
 def logout():
@@ -121,7 +121,6 @@ def logout():
     )
 
 
-@jwt_required()
 @swag_from("../schemes/user_account_post_param.yaml")
 @user_bp.route("/account/", methods=["POST"])
 def update():
@@ -157,23 +156,26 @@ def get_user(user_id):
     return jsonify(user.to_json())
 
 
-@jwt_required()
 @user_bp.route("/history", methods=["GET"])
 @swag_from("../schemes/user_history_get.yaml", methods=["GET"])
-def get_user_history():
+def get_user_history(**kwargs):
     """
     Получить историю операций пользователя
     """
-    # FIXME: удалить после слияния
-    try:
-        verify_jwt_in_request()
-    except Exception as ex:
-        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
     current_user = User.query.get(get_jwt_identity())
+    page_size = request.args.get("page_size", None)
+    page_number = request.args.get("page_number", 1)
     if not current_user:
         return jsonify({"error": "No such user"}), HTTPStatus.NOT_FOUND
-    history = current_user.get_history()
-    return jsonify([h.to_json() for h in history.all()])
+    if page_size is None:
+        history = current_user.get_history().all()
+    else:
+        history = (
+            current_user.get_history()
+            .paginate(int(page_number), int(page_size), False)
+            .items
+        )
+    return jsonify([h.to_json() for h in history])
 
 
 @jwt.token_in_blocklist_loader

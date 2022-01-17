@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 from auth_config import db
 from db_models import Group, User
+from decorators import admin_required
 from flasgger.utils import swag_from
 from flask import Blueprint, render_template, request
 from flask.json import jsonify
@@ -10,20 +11,16 @@ from flask_jwt_extended import get_jwt_identity, jwt_required, verify_jwt_in_req
 group_bp = Blueprint("group_bp", __name__)
 
 
-@jwt_required()
+@admin_required()
 @swag_from("../schemes/group_post.yaml")
 @group_bp.route("/", methods=["POST"])
 def create_group():
     """
     Создать новую группу
     """
-    try:
-        verify_jwt_in_request()
-    except Exception as ex:
-        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
-    current_user = User.query.get(get_jwt_identity())
-    if not current_user or not current_user.is_admin():
-        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
+    group = Group.query.get(requests.json["id"])
+    if group is None:
+        return jsonify("Group already exist"), HTTPStatus.ОК
     group = Group.from_json(request.json)
     db.session.add(group)
     db.session.commit()
@@ -42,20 +39,13 @@ def get_group(group_id):
     return jsonify(group.to_json())
 
 
-@jwt_required()
+@admin_required()
 @swag_from("../schemes/group_del.yaml")
 @group_bp.route("/<group_id>/", methods=["DELETE"])
 def del_group(group_id):
     """
     Удалить группу
     """
-    try:
-        verify_jwt_in_request()
-    except Exception as ex:
-        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
-    current_user = User.query.get(get_jwt_identity())
-    if not current_user or not current_user.is_admin():
-        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
     group = Group.query.get(group_id)
     if group is None:
         return jsonify({"result": "Group did not exist"})
@@ -64,20 +54,13 @@ def del_group(group_id):
     return jsonify({"result": "Group deleted"})
 
 
-@jwt_required()
+@admin_required()
 @swag_from("../schemes/group_put.yaml")
 @group_bp.route("/<group_id>/", methods=["PUT"])
 def update_group(group_id):
     """
     Изменить группу
     """
-    try:
-        verify_jwt_in_request()
-    except Exception as ex:
-        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
-    current_user = User.query.get(get_jwt_identity())
-    if not current_user or not current_user.is_admin():
-        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
     group = Group.query.get(group_id)
     if group is None:
         return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
@@ -96,31 +79,29 @@ def list_group_users(group_id):
     """
     Список пользователей, входящих в определенную группу.
     """
+    page_size = request.args.get("page_size", None)
+    page_number = request.args.get("page_number", 1)
     group = Group.query.get(group_id)
     if group is None:
         return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
     users = group.get_all_users()
     answer = []
-    for user in users.all():
-        answer.append(user.to_json())
+    if page_size is None:
+        for user in users.all():
+            answer.append(user.to_json())
+    else:
+        for user in users.paginate(int(page_number), int(page_size), False).items:
+            answer.append(user.to_json())
     return jsonify(answer)
 
 
-@jwt_required()
+@admin_required()
 @swag_from("../schemes/group_user_post.yaml", methods=["POST"])
 @group_bp.route("/<group_id>/users/", methods=["POST"])
 def add_group_user(group_id):
     """
     Добавить пользователя в группу
     """
-    # FIXME: удалить после слияния
-    try:
-        verify_jwt_in_request()
-    except Exception as ex:
-        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
-    current_user = User.query.get(get_jwt_identity())
-    if not current_user or not current_user.is_admin():
-        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
     group = Group.query.get(group_id)
     if group is None:
         return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
@@ -159,21 +140,13 @@ def get_membership(group_id, user_id):
     return jsonify({"user_id": user_id, "group_id": group_id})
 
 
-@jwt_required()
+@admin_required()
 @swag_from("../schemes/group_user_del.yaml", methods=["DELETE"])
 @group_bp.route("/<group_id>/user/<user_id>", methods=["DELETE"])
 def del_membership(group_id, user_id):
     """
     Удалить пользователя из группы
     """
-    # FIXME: удалить после слияния
-    try:
-        verify_jwt_in_request()
-    except Exception as ex:
-        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
-    current_user = User.query.get(get_jwt_identity())
-    if not current_user or not current_user.is_admin():
-        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
     user = User.query.get(user_id)
     if user is None:
         return jsonify({"error": "user not found"}), HTTPStatus.NOT_FOUND

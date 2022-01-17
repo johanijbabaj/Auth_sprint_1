@@ -2,28 +2,14 @@
 Основной модуль
 """
 
-import datetime
 import logging
 import os
 import sys
-from http import HTTPStatus
 
 from auth_config import Config, db, jwt, jwt_redis
 from db_models import Group, User
 from flasgger import Swagger
-from flasgger.utils import swag_from
-from flask import Flask, request
-from flask.json import jsonify
-from flask_jwt_extended import (
-    JWTManager,
-    create_access_token,
-    create_refresh_token,
-    get_jwt,
-    get_jwt_identity,
-    jwt_required,
-    verify_jwt_in_request,
-)
-from flask_script import Manager
+from flask import Flask
 from group_bp.group_bp import group_bp
 from groups_bp.groups_bp import groups_bp
 from password_hash import check_password, hash_password
