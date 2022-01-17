@@ -1,0 +1,45 @@
+#Получить историю по пользоватлю
+#---
+#swagger: "2.0"
+tags:
+  - User
+summary: "Получить историю по пользоватлю"
+description: ""
+produces:
+      - "application/json"
+security:
+        - APIKeyHeader: [ 'x-access-token' ]
+parameters:
+      - name: "user_id"
+        in: "header"
+        type: "string"
+        format: "uuid"
+        required: true
+        description: "Идентификатор пользователя"
+responses:
+      200:
+        description: OK
+        schema:
+          $ref: "#/definitions/History"
+      401:
+        description: UNAUTHORIZED
+      403:
+        description: FORBIDDEN
+definitions:
+  History:
+    type: "xml"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      user_id":
+        type: "string"
+        format: "uuid"
+      user_agent:
+        type: "string"
+        format: "uuid"
+      timestamp:
+        type: "string"
+        format: "date-time"
+    xml:
+      name: "History"

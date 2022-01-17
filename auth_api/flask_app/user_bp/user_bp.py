@@ -145,6 +145,7 @@ def update():
     )
 
 
+@swag_from("../schemes/user_get.yaml", methods=["GET"])
 @user_bp.route("/<user_id>/", methods=["GET"])
 def get_user(user_id):
     """
@@ -156,12 +157,18 @@ def get_user(user_id):
     return jsonify(user.to_json())
 
 
-@user_bp.route("/history", methods=["GET"])
 @jwt_required()
+@user_bp.route("/history", methods=["GET"])
+@swag_from("../schemes/user_history_get.yaml", methods=["GET"])
 def get_user_history():
     """
     Получить историю операций пользователя
     """
+    # FIXME: удалить после слияния
+    try:
+        verify_jwt_in_request()
+    except Exception as ex:
+        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
     current_user = User.query.get(get_jwt_identity())
     if not current_user:
         return jsonify({"error": "No such user"}), HTTPStatus.NOT_FOUND

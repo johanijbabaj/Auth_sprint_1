@@ -47,16 +47,8 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
     groups = db.relationship(
-        "Group",
-        secondary=user_group,
-        lazy="subquery",
-        back_populates="users"
-        # backref=db.backref("groups", lazy=True),
+        "Group", secondary=user_group, lazy="subquery", back_populates="users"
     )
-
-    # backref=db.backref("user", lazy="joined"),
-    # lazy="dynamic",
-    # cascade="all, delete-orphan",
 
     @property
     def password(self):
@@ -137,16 +129,8 @@ class Group(db.Model):
     description = db.Column(db.String, nullable=False)
 
     users = db.relationship(
-        "User",
-        secondary=user_group,
-        lazy="subquery",
-        back_populates="groups"
-        # backref=db.backref("users", lazy=True),
+        "User", secondary=user_group, lazy="subquery", back_populates="groups"
     )
-
-    # backref=db.backref("group", lazy="joined"),
-    # lazy="dynamic",
-    # cascade="all, delete-orphan",
 
     def __repr__(self):
         return f"<Group {self.name}>"
@@ -213,33 +197,3 @@ class History(db.Model):
             "useragent": self.useragent,
             "timestamp": self.timestamp.isoformat(),
         }
-
-
-# class UserGroup(db.Model):
-#     """Членство пользователя в группе"""
-#     __table_args__ = {"schema": "auth", "extend_existing": True}
-#     __tablename__ = "user_group_rel"
-#
-#     id = db.Column(
-#         UUID(as_uuid=True),
-#         primary_key=True,
-#         default=uuid.uuid4,
-#         unique=True,
-#         nullable=False,
-#     )
-#     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("auth.user.id"))
-#     group_id = db.Column(UUID(as_uuid=True), db.ForeignKey("auth.group.id"))
-#     user = db.relationship(User, backref=db.backref("user_group_rel", lazy="joined", cascade="all, delete-orphan"))
-#     group = db.relationship(Group, backref=db.backref("user_group_rel", lazy="joined", cascade="all, delete-orphan"))
-#         #lazy="dynamic",
-#         #
-#
-#     def __repr__(self):
-#         return f'<User {self.user_id} in group {self.group_id}>'
-#
-#     def to_json(self):
-#         """Информация о членстве пользователя в группе для сериализации в JSON"""
-#         return {
-#             'user_id': self.user_id,
-#             'group_id': self.group_id
-#         }
