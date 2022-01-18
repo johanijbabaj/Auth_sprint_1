@@ -63,7 +63,7 @@ def test_nobody_history_paginated():
     data = ans.json()
     token = data['access_token']
     ans = requests.get(
-        f"http://{AUTH_API_HOST}/v1/user/history?page_size=3&page_number=1",
+        f"http://{AUTH_API_HOST}/v1/user/history?page_size=5&page_number=1",
         headers={'Authorization': 'Bearer ' + token}
     )
     assert ans.status_code == 200

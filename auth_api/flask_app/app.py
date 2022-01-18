@@ -244,13 +244,19 @@ def list_group_users(group_id):
     """
     Список пользователей, входящих в определенную группу.
     """
+    page_size = request.args.get("page_size", None)
+    page_number = request.args.get("page_number", 1)
     group = Group.query.get(group_id)
     if group is None:
         return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
     users = group.get_all_users()
     answer = []
-    for user in users.all():
-        answer.append(user.to_json())
+    if page_size is None:
+        for user in users.all():
+            answer.append(user.to_json())
+    else:
+        for user in users.paginate(int(page_number), int(page_size), False).items:
+            answer.append(user.to_json())
     return jsonify(answer)
 
 
@@ -280,7 +286,7 @@ def list_users():
     """
     users = []
     page_size = request.args.get("page_size", None)
-    page_number = request.args.get("page_size", 1)
+    page_number = request.args.get("page_number", 1)
     if page_size is None:
         for user in User.query.order_by(User.login).all():
             users.append(user.to_json())
@@ -344,7 +350,7 @@ def get_user_history():
     """
     current_user = User.query.get(get_jwt_identity())
     page_size = request.args.get("page_size", None)
-    page_number = request.args.get("page_size", 1)
+    page_number = request.args.get("page_number", 1)
     if not current_user:
         return jsonify({"error": "No such user"}), HTTPStatus.NOT_FOUND
     if page_size is None:
@@ -402,6 +408,9 @@ def db_initialize():
 
 
 if __name__ == "__main__":
+    # При прогоне тестов удаляем прошлые данные из базы и создаем заново
+    if len(sys.argv) == 2 and sys.argv[1] == "--reinitialize":
+        db.drop_all()
     # Инициалиазции базы
     try:
         user = User.query.filter_by(login="admin").first()

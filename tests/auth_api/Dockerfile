@@ -5,3 +5,4 @@ COPY requirements.txt /tests/
 RUN pip install -r requirements.txt --no-cache-dir
 COPY src /tests/src
 COPY utils /tests/utils
+COPY conftest.py /tests

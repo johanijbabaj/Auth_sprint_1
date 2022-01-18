@@ -12,7 +12,7 @@ services:
       - ../../auth_api/flask_app:/auth_api/flask_app:ro
     networks:
       - movies_network
-    command: ["python", "app.py"]
+    command: ["python", "app.py", "--reinitialize"]
     deploy:
       restart_policy:
         condition: on-failure
@@ -55,7 +55,7 @@ services:
         - tests.env
     networks:
       - movies_network
-    command: ["bash", "-c", "python utils/wait_for_api.py && pytest -s src/"]
+    command: ["bash", "-c", "PYTHONPATH=. python utils/wait_for_api.py && pytest -s src/"]
 
 
 networks:
