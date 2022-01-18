@@ -10,6 +10,7 @@ from http import HTTPStatus
 
 from auth_config import BASE_PATH, Config, app, db, jwt_redis
 from db_models import Group, History, User, UserGroup
+from decorators import admin_required
 from flasgger.utils import swag_from
 from flask import request
 from flask.json import jsonify
@@ -179,20 +180,13 @@ def check_if_token_is_revoked(jwt_header, jwt_payload):
     return token_in_redis is not None
 
 
-@jwt_required()
 @swag_from("./schemes/group_post.yaml")
 @app.route(f"{BASE_PATH}/group/", methods=["POST"])
+@admin_required()
 def create_group():
     """
     Создать новую группу
     """
-    try:
-        verify_jwt_in_request()
-    except Exception as ex:
-        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
-    current_user = User.query.get(get_jwt_identity())
-    if not current_user or not current_user.is_admin():
-        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
     group = Group.from_json(request.json)
     db.session.add(group)
     db.session.commit()
@@ -211,20 +205,13 @@ def get_group(group_id):
     return jsonify(group.to_json())
 
 
-@jwt_required()
 @swag_from("./schemes/group_del.yaml")
 @app.route(f"{BASE_PATH}/group/<group_id>/", methods=["DELETE"])
+@admin_required()
 def del_group(group_id):
     """
     Удалить группу
     """
-    try:
-        verify_jwt_in_request()
-    except Exception as ex:
-        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
-    current_user = User.query.get(get_jwt_identity())
-    if not current_user or not current_user.is_admin():
-        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
     group = Group.query.get(group_id)
     if group is None:
         return jsonify({"result": "Group did not exist"})
@@ -233,20 +220,13 @@ def del_group(group_id):
     return jsonify({"result": "Group deleted"})
 
 
-@jwt_required()
 @swag_from("./schemes/group_put.yaml")
 @app.route(f"{BASE_PATH}/group/<group_id>/", methods=["PUT"])
+@admin_required()
 def update_group(group_id):
     """
     Изменить группу
     """
-    try:
-        verify_jwt_in_request()
-    except Exception as ex:
-        return jsonify({"msg": f"Bad access token: {ex}"}), HTTPStatus.UNAUTHORIZED
-    current_user = User.query.get(get_jwt_identity())
-    if not current_user or not current_user.is_admin():
-        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
     group = Group.query.get(group_id)
     if group is None:
         return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
@@ -264,25 +244,28 @@ def list_group_users(group_id):
     """
     Список пользователей, входящих в определенную группу.
     """
+    page_size = request.args.get("page_size", None)
+    page_number = request.args.get("page_number", 1)
     group = Group.query.get(group_id)
     if group is None:
         return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
     users = group.get_all_users()
     answer = []
-    for user in users.all():
-        answer.append(user.to_json())
+    if page_size is None:
+        for user in users.all():
+            answer.append(user.to_json())
+    else:
+        for user in users.paginate(int(page_number), int(page_size), False).items:
+            answer.append(user.to_json())
     return jsonify(answer)
 
 
 @app.route(f"{BASE_PATH}/group/<group_id>/users/", methods=["POST"])
-@jwt_required()
+@admin_required()
 def add_group_user(group_id):
     """
     Добавить пользователя в группу
     """
-    current_user = User.query.get(get_jwt_identity())
-    if not current_user or not current_user.is_admin():
-        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
     group = Group.query.get(group_id)
     if group is None:
         return jsonify({"error": "group not found"}), HTTPStatus.NOT_FOUND
@@ -302,8 +285,14 @@ def list_users():
     Список всех зарегистрированных пользователей
     """
     users = []
-    for user in User.query.all():
-        users.append(user.to_json())
+    page_size = request.args.get("page_size", None)
+    page_number = request.args.get("page_number", 1)
+    if page_size is None:
+        for user in User.query.order_by(User.login).all():
+            users.append(user.to_json())
+    else:
+        for user in User.query.order_by(User.login).paginate(int(page_number), int(page_size), False).items:
+            users.append(user.to_json())
     return jsonify(users)
 
 
@@ -338,14 +327,11 @@ def get_membership(group_id, user_id):
 
 
 @app.route(f"{BASE_PATH}/group/<group_id>/user/<user_id>", methods=["DELETE"])
-@jwt_required()
+@admin_required()
 def del_membership(group_id, user_id):
     """
     Удалить пользователя из группы
     """
-    current_user = User.query.get(get_jwt_identity())
-    if not current_user or not current_user.is_admin():
-        return jsonify({"error": "Only administrators may do it"}), HTTPStatus.FORBIDDEN
     membership = (
         UserGroup.query.filter_by(group_id=group_id).filter_by(user_id=user_id).first()
     )
@@ -363,10 +349,15 @@ def get_user_history():
     Получить историю операций пользователя
     """
     current_user = User.query.get(get_jwt_identity())
+    page_size = request.args.get("page_size", None)
+    page_number = request.args.get("page_number", 1)
     if not current_user:
         return jsonify({"error": "No such user"}), HTTPStatus.NOT_FOUND
-    history = current_user.get_history()
-    return jsonify([h.to_json() for h in history.all()])
+    if page_size is None:
+        history = current_user.get_history().all()
+    else:
+        history = current_user.get_history().paginate(int(page_number), int(page_size), False).items
+    return jsonify([h.to_json() for h in history])
 
 
 def db_initialize():
@@ -417,6 +408,9 @@ def db_initialize():
 
 
 if __name__ == "__main__":
+    # При прогоне тестов удаляем прошлые данные из базы и создаем заново
+    if len(sys.argv) == 2 and sys.argv[1] == "--reinitialize":
+        db.drop_all()
     # Инициалиазции базы
     try:
         user = User.query.filter_by(login="admin").first()

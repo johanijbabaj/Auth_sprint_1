@@ -92,9 +92,9 @@ class User(db.Model):
         if since:
             return History.query.filter(History.user_id == self.id).filter(
                 History.timestamp >= since
-            ).order_by('timestamp')
+            ).order_by(History.timestamp.desc())
         else:
-            return History.query.filter(History.user_id == self.id).order_by('timestamp')
+            return History.query.filter(History.user_id == self.id).order_by(History.timestamp.desc())
 
 
 class Group(db.Model):

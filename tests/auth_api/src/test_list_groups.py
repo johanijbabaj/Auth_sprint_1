@@ -102,3 +102,24 @@ def test_nobody_create_group():
         headers={"Authorization": "Bearer " + token},
     )
     assert ans.status_code == 404
+
+
+def test_users_paginated(seven_little_guys):
+    """Постраничная выдача состава группы из семи пользователей"""
+    # Фикстура возвращает идентификатор группы
+    gid = seven_little_guys
+    ans = requests.get(f"http://{AUTH_API_HOST}/v1/group/{gid}/users/?page_size=3&page_number=1")
+    assert ans.status_code == 200
+    data = ans.json()
+    assert isinstance(data, list)
+    assert len(data) == 3
+    ans = requests.get(f"http://{AUTH_API_HOST}/v1/group/{gid}/users/?page_size=3&page_number=2")
+    assert ans.status_code == 200
+    data = ans.json()
+    assert isinstance(data, list)
+    assert len(data) == 3
+    ans = requests.get(f"http://{AUTH_API_HOST}/v1/group/{gid}/users/?page_size=3&page_number=3")
+    assert ans.status_code == 200
+    data = ans.json()
+    assert isinstance(data, list)
+    assert len(data) == 1
