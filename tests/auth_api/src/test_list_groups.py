@@ -19,7 +19,7 @@ def test_create_group_no_permissions():
     gname = "Тестовая группа"
     gdescription = "Тестовая группа"
     ans = requests.post(
-        f"http://{AUTH_API_HOST}/v1/group/",
+        f"http://{AUTH_API_HOST}/v1/groups/",
         json={"id": gid, "name": gname, "description": gdescription},
     )
     assert ans.status_code in [403, 401]
@@ -34,39 +34,39 @@ def test_create_delete_group():
     gname = "Тестовая группа"
     gdescription = "Тестовая группа"
     ans = requests.post(
-        f"http://{AUTH_API_HOST}/v1/user/login?login=admin&password={os.getenv('ADMIN_PASSWORD')}"
+        f"http://{AUTH_API_HOST}/v1/users/login?login=admin&password={os.getenv('ADMIN_PASSWORD')}"
     )
     assert ans.status_code == 200
     data = ans.json()
     token = data["access_token"]
     # Запрашиваем группу и проверяем, что ее нет в базе
     ans = requests.get(
-        f"http://{AUTH_API_HOST}/v1/group/{gid}/",
+        f"http://{AUTH_API_HOST}/v1/groups/{gid}/",
         headers={"Authorization": "Bearer " + token},
     )
     assert ans.status_code == 404
     # Создаем группу
     ans = requests.post(
-        f"http://{AUTH_API_HOST}/v1/group/",
-        json={"name": gname, "description": gdescription},
+        f"http://{AUTH_API_HOST}/v1/groups/",
+        json={"id": gid, "name": gname, "description": gdescription},
         headers={"Authorization": "Bearer " + token},
     )
     assert ans.status_code == 200
     # Запрашиваем группу и проверяем, что теперь она есть
     ans = requests.get(
-        f"http://{AUTH_API_HOST}/v1/group/{gid}/",
+        f"http://{AUTH_API_HOST}/v1/groups/{gid}/",
         headers={"Authorization": "Bearer " + token},
     )
     assert ans.status_code == 200
     # Удаляем группу
     ans = requests.delete(
-        f"http://{AUTH_API_HOST}/v1/group/{gid}/",
+        f"http://{AUTH_API_HOST}/v1/groups/{gid}/",
         headers={"Authorization": "Bearer " + token},
     )
     assert ans.status_code == 200
     # Проверяем, что теперь ее снова нет
     ans = requests.get(
-        f"http://{AUTH_API_HOST}/v1/group/{gid}/",
+        f"http://{AUTH_API_HOST}/v1/groups/{gid}/",
         headers={"Authorization": "Bearer " + token},
     )
     assert ans.status_code == 404
@@ -78,27 +78,27 @@ def test_nobody_create_group():
     gname = "Тестовая группа"
     gdescription = "Тестовая группа"
     ans = requests.post(
-        f"http://{AUTH_API_HOST}/v1/user/login?login=nobody&password={os.getenv('NOBODY_PASSWORD')}"
+        f"http://{AUTH_API_HOST}/v1/users/login?login=nobody&password={os.getenv('NOBODY_PASSWORD')}"
     )
     assert ans.status_code == 200
     data = ans.json()
     token = data["access_token"]
     # Запрашиваем группу и проверяем, что ее нет в базе
     ans = requests.get(
-        f"http://{AUTH_API_HOST}/v1/group/{gid}/",
+        f"http://{AUTH_API_HOST}/v1/groups/{gid}/",
         headers={"Authorization": "Bearer " + token},
     )
     assert ans.status_code == 404
     # Пытаемся создать группу, но должно не получиться
     ans = requests.post(
-        f"http://{AUTH_API_HOST}/v1/group/",
+        f"http://{AUTH_API_HOST}/v1/groups/",
         json={"id": gid, "name": gname, "description": gdescription},
         headers={"Authorization": "Bearer " + token},
     )
     assert ans.status_code in [401, 403]
     # Проверяем, что ее все еще нет
     ans = requests.get(
-        f"http://{AUTH_API_HOST}/v1/group/{gid}/",
+        f"http://{AUTH_API_HOST}/v1/groups/{gid}/",
         headers={"Authorization": "Bearer " + token},
     )
     assert ans.status_code == 404
@@ -109,21 +109,21 @@ def test_users_paginated(seven_little_guys):
     # Фикстура возвращает идентификатор группы
     gid = seven_little_guys
     ans = requests.get(
-        f"http://{AUTH_API_HOST}/v1/group/{gid}/users/?page_size=3&page_number=1"
+        f"http://{AUTH_API_HOST}/v1/groups/{gid}/users/?page_size=3&page_number=1"
     )
     assert ans.status_code == 200
     data = ans.json()
     assert isinstance(data, list)
     assert len(data) == 3
     ans = requests.get(
-        f"http://{AUTH_API_HOST}/v1/group/{gid}/users/?page_size=3&page_number=2"
+        f"http://{AUTH_API_HOST}/v1/groups/{gid}/users/?page_size=3&page_number=2"
     )
     assert ans.status_code == 200
     data = ans.json()
     assert isinstance(data, list)
     assert len(data) == 3
     ans = requests.get(
-        f"http://{AUTH_API_HOST}/v1/group/{gid}/users/?page_size=3&page_number=3"
+        f"http://{AUTH_API_HOST}/v1/groups/{gid}/users/?page_size=3&page_number=3"
     )
     assert ans.status_code == 200
     data = ans.json()

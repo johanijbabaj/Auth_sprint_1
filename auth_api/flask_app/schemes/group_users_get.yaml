@@ -14,6 +14,14 @@ parameters:
         format: "uuid"
         required: true
         description: "Идентификатор группы"
+      - name: "page_number"
+        in: "path"
+        type: "integer"
+        required: true
+      - name: "page_size"
+        in: "path"
+        type: "integer"
+        required: true
 responses:
       "200":
         description: "Массив пользователей группы"

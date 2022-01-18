@@ -10,11 +10,9 @@ from auth_config import Config, db, jwt, jwt_redis
 from db_models import Group, User
 from flasgger import Swagger
 from flask import Flask
-from group_bp.group_bp import group_bp
 from groups_bp.groups_bp import groups_bp
 from password_hash import check_password, hash_password
 from test_bp.test_bp import test_bp
-from user_bp.user_bp import user_bp
 from users_bp.users_bp import users_bp
 
 BASE_PATH = "/v1"
@@ -72,9 +70,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config())
     app.register_blueprint(groups_bp, url_prefix=f"{BASE_PATH}/groups")
-    app.register_blueprint(group_bp, url_prefix=f"{BASE_PATH}/group")
     app.register_blueprint(users_bp, url_prefix=f"{BASE_PATH}/users")
-    app.register_blueprint(user_bp, url_prefix=f"{BASE_PATH}/user")
     app.register_blueprint(test_bp, url_prefix="/test")
 
     swagger = Swagger(app, template=Config.SWAGGER_TEMPLATE)
