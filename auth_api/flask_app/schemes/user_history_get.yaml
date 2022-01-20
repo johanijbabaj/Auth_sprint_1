@@ -8,7 +8,7 @@ description: ""
 produces:
       - "application/json"
 security:
-        - APIKeyHeader: [ 'x-access-token' ]
+      - APIKeyHeader: [ 'x-access-token' ]
 parameters:
       - name: "user_id"
         in: "header"

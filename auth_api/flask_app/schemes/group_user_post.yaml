@@ -1,6 +1,7 @@
 #Добавить пользователя в группу
 #---
 #swagger: "2.0"
+# @S
 tags:
   - Group
 summary: "Добавить пользователя в группу"
@@ -17,13 +18,24 @@ parameters:
         required: true
         description: "Идентификатор группы"
       - name: "user_id"
-        in: "query"
+        in: "body"
         type: "string"
         format: "uuid"
         required: true
         description: "Идентификатор пользователя"
+        schema:
+          $ref: '#/definitions/UserId'
 responses:
       "200":
         description: "Пользователь добавлен в группу"
       "404":
         description: "Пользователь или группа не найдены"
+definitions:
+  UserId:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+    xml:
+      name: "UserId"

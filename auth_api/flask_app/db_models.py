@@ -145,7 +145,7 @@ class Group(db.Model):
 
     def get_all_users(self):
         """Список всех пользователей в этой группе"""
-        return self.users
+        return User.query.filter(User.groups.any(id=self.id))
 
     def to_json(self, *, url_prefix: Optional[str] = None):
         """
