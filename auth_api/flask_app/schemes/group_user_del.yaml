@@ -1,0 +1,29 @@
+#Удаление вхождения пользователя в группу
+#---
+#swagger: "2.0"
+tags:
+  - Group
+summary: "Удаление вхождения пользователя в группу"
+description: ""
+produces:
+      - "application/json"
+security:
+        - APIKeyHeader: [ 'x-access-token' ]
+parameters:
+      - name: "group_id"
+        in: "path"
+        type: "string"
+        format: "uuid"
+        required: true
+        description: "Идентификатор группы"
+      - name: "user_id"
+        in: "path"
+        type: "string"
+        format: "uuid"
+        required: true
+        description: "Идентификатор пользователя"
+responses:
+      "200":
+        description: "Пользователь удален из группы"
+      "404":
+        description: "Пользователь или группа не найден, пользователь не входит в группу"

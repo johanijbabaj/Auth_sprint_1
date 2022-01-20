@@ -1,0 +1,37 @@
+#Получить данные пользователя
+#---
+#swagger: "2.0"
+tags:
+  - User
+summary: "Получить данные по пользователю"
+description: ""
+produces:
+      - "application/json"
+parameters:
+      - name: "user_id"
+        in: "path"
+        type: "string"
+        format: "uuid"
+        required: true
+        description: "Идентификатор пользователя"
+responses:
+      "200":
+        description: "Данные пользователя"
+        schema:
+          $ref: "#/definitions/UserBrief"
+      "404":
+        description: "Пользователь не найден"
+definitions:
+  UserBrief:
+    type: "object"
+    properties:
+      email:
+        type: "string"
+        format: email
+      id:
+        type: "string"
+        format: "uuid"
+      login:
+        type: "string"
+    xml:
+      name: "UserBrief"

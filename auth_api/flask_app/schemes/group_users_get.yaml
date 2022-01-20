@@ -1,0 +1,58 @@
+#Получить данные по пользователям группы
+#---
+#swagger: "2.0"
+tags:
+  - Group
+summary: "Получить данные по группе"
+description: ""
+produces:
+      - "application/json"
+parameters:
+      - name: "group_id"
+        in: "path"
+        type: "string"
+        format: "uuid"
+        required: true
+        description: "Идентификатор группы"
+responses:
+      "200":
+        description: "Массив пользователей группы"
+        schema:
+          $ref: "#/definitions/UserList"
+definitions:
+  User:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      login:
+        type: "string"
+      email:
+        type: "string"
+        format: email
+      password:
+        type: "string"
+        format: "password"
+      full_name:
+        type: "string"
+      phone:
+        type: "string"
+      avatar_link:
+        type: "string"
+        format: "url"
+      address:
+        type: "string"
+        format: "string"
+      created_at:
+        type: "string"
+        format: "date-time"
+      updated_at:
+        type: "string"
+        format: "date-time"
+    xml:
+      name: "User"
+  UserList:
+    type: "array"
+    items:
+      $ref: "#/definitions/User"

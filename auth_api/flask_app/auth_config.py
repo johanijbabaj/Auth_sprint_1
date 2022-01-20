@@ -1,13 +1,10 @@
 import os
 from datetime import timedelta
 
-from flasgger import Swagger
-from flask import Flask
+from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
 
 import redis
-
-BASE_PATH = "/v1"
 
 
 class Config:
@@ -30,12 +27,8 @@ class Config:
     }
 
 
-app = Flask(__name__)
-app.config.from_object(Config())
-db = SQLAlchemy(app=app, session_options={"autoflush": False})
+db = SQLAlchemy(session_options={"autoflush": False})
 
-engine = db.create_engine(Config.SQLALCHEMY_DATABASE_URI, {})
-engine.execute("CREATE SCHEMA IF NOT EXISTS auth;")
 
 jwt_redis = redis.Redis(
     host=str(os.getenv("REDIS_AUTH_HOST")),
@@ -44,4 +37,4 @@ jwt_redis = redis.Redis(
     db=0,
     decode_responses=True,
 )
-swagger = Swagger(app, template=Config.SWAGGER_TEMPLATE)
+jwt = JWTManager()

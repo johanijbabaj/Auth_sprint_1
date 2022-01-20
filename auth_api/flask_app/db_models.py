@@ -6,11 +6,27 @@ from auth_config import db
 from sqlalchemy.dialects.postgresql import UUID
 from werkzeug.security import check_password_hash, generate_password_hash
 
+user_group = db.Table(
+    "user_group_rel",
+    db.Column(
+        "id",
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    ),
+    db.Column("user_id", UUID(as_uuid=True), db.ForeignKey("auth.user.id")),
+    db.Column("group_id", UUID(as_uuid=True), db.ForeignKey("auth.group.id")),
+    extend_existing=True,
+    schema="auth",
+)
+
 
 class User(db.Model):
     """Зарегистрированный в системе пользователь"""
 
-    __table_args__ = {"schema": "auth"}
+    __table_args__ = {"schema": "auth", "extend_existing": True}
     __tablename__ = "user"
 
     id = db.Column(
@@ -31,10 +47,7 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
     groups = db.relationship(
-        "UserGroup",
-        backref=db.backref("user", lazy="joined"),
-        lazy="dynamic",
-        cascade="all, delete-orphan",
+        "Group", secondary=user_group, lazy="subquery", back_populates="users"
     )
 
     @property
@@ -57,14 +70,12 @@ class User(db.Model):
 
     def get_all_groups(self):
         """Список всех групп, в которых состоит пользователь"""
-        return Group.query.join(UserGroup, UserGroup.group_id == Group.id).filter(
-            UserGroup.user_id == self.id
-        )
+        return self.groups
 
     def is_admin(self):
         """Состоит ли пользователь в группе администраторов"""
-        groups = self.get_all_groups()
-        for g in groups.all():
+        groups = self.groups
+        for g in groups:
             if g.is_admin():
                 return True
         return False
@@ -84,23 +95,27 @@ class User(db.Model):
 
     def get_history(self, since: Optional[datetime.datetime] = None):
         """
-            Вернуть историю действий этого пользователя
+        Вернуть историю действий этого пользователя
 
-            Если задан параметр since, то вернуть только действия, которые
-            были позже указанной метки времени
+        Если задан параметр since, то вернуть только действия, которые
+        были позже указанной метки времени
         """
         if since:
-            return History.query.filter(History.user_id == self.id).filter(
-                History.timestamp >= since
-            ).order_by(History.timestamp.desc())
+            return (
+                History.query.filter(History.user_id == self.id)
+                .filter(History.timestamp >= since)
+                .order_by(History.timestamp.desc())
+            )
         else:
-            return History.query.filter(History.user_id == self.id).order_by(History.timestamp.desc())
+            return History.query.filter(History.user_id == self.id).order_by(
+                History.timestamp.desc()
+            )
 
 
 class Group(db.Model):
     """Пользовательская группа (роль)"""
 
-    __table_args__ = {"schema": "auth"}
+    __table_args__ = {"schema": "auth", "extend_existing": True}
     __tablename__ = "group"
 
     id = db.Column(
@@ -114,10 +129,7 @@ class Group(db.Model):
     description = db.Column(db.String, nullable=False)
 
     users = db.relationship(
-        "UserGroup",
-        backref=db.backref("group", lazy="joined"),
-        lazy="dynamic",
-        cascade="all, delete-orphan",
+        "User", secondary=user_group, lazy="subquery", back_populates="groups"
     )
 
     def __repr__(self):
@@ -133,9 +145,7 @@ class Group(db.Model):
 
     def get_all_users(self):
         """Список всех пользователей в этой группе"""
-        return User.query.join(UserGroup, UserGroup.user_id == User.id).filter(
-            UserGroup.group_id == self.id
-        )
+        return self.users
 
     def to_json(self, *, url_prefix: Optional[str] = None):
         """
@@ -153,17 +163,17 @@ class Group(db.Model):
     @staticmethod
     def from_json(obj):
         """
-            Создать группу на основе словаря python
+        Создать группу на основе словаря python
         """
         return Group(
-            id = obj['id'],
-            name = obj['name'],
-            description = obj.get('description', obj['name'])
+            id=obj["id"],
+            name=obj["name"],
+            description=obj.get("description", obj["name"]),
         )
 
 
 class History(db.Model):
-    __table_args__ = {"schema": "auth"}
+    __table_args__ = {"schema": "auth", "extend_existing": True}
     __tablename__ = "history"
 
     id = db.Column(
@@ -182,34 +192,8 @@ class History(db.Model):
 
     def to_json(self):
         return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'useragent': self.useragent,
-            'timestamp': self.timestamp.isoformat()
-        }
-
-
-class UserGroup(db.Model):
-    """Членство пользователя в группе"""
-    __table_args__ = {"schema": "auth"}
-    __tablename__ = "user_group_rel"
-
-    id = db.Column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-        unique=True,
-        nullable=False,
-    )
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("auth.user.id"))
-    group_id = db.Column(UUID(as_uuid=True), db.ForeignKey("auth.group.id"))
-
-    def __repr__(self):
-        return f'<User {self.user_id} in group {self.group_id}>'
-
-    def to_json(self):
-        """Информация о членстве пользователя в группе для сериализации в JSON"""
-        return {
-            'user_id': self.user_id,
-            'group_id': self.group_id
+            "id": self.id,
+            "user_id": self.user_id,
+            "useragent": self.useragent,
+            "timestamp": self.timestamp.isoformat(),
         }

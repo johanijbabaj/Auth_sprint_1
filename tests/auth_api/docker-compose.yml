@@ -30,6 +30,8 @@ services:
       - ./pgdata:/var/lib/postgresql/data
     env_file:
       - db_auth.env
+    ports:
+      - "5432:5432"
     networks:
       - movies_network
 

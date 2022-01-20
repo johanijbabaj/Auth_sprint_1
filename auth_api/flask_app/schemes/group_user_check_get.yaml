@@ -1,0 +1,27 @@
+#Проверка вхождения пользователя в группу
+#---
+#swagger: "2.0"
+tags:
+  - Group
+summary: "Проверка вхождения пользователя в группу"
+description: ""
+produces:
+      - "application/json"
+parameters:
+      - name: "group_id"
+        in: "path"
+        type: "string"
+        format: "uuid"
+        required: true
+        description: "Идентификатор группы"
+      - name: "user_id"
+        in: "path"
+        type: "string"
+        format: "uuid"
+        required: true
+        description: "Идентификатор пользователя"
+responses:
+      "200":
+        description: "Пользователь входит в группу"
+      "404":
+        description: "Пользователь или группа не найден, пользователь не входит в группу"

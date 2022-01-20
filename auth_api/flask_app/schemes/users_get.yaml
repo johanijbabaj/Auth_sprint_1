@@ -1,0 +1,32 @@
+#Получить список пользователей
+#---
+#swagger: "2.0"
+tags:
+  - User
+summary: "Получить список пользователей"
+description: ""
+produces:
+      - "application/json"
+responses:
+      "200":
+        description: "Массив пользователей"
+        schema:
+          $ref: "#/definitions/UserBriefList"
+definitions:
+  UserBrief:
+    type: "object"
+    properties:
+      email:
+        type: "string"
+        format: email
+      id:
+        type: "string"
+        format: "uuid"
+      login:
+        type: "string"
+    xml:
+      name: "UserBrief"
+  UserBriefList:
+    type: "array"
+    items:
+      $ref: "#/definitions/UserBrief"

@@ -16,10 +16,12 @@ API_HOST = os.getenv("AUTH_API_HOST")
 
 def wait_for_auth_api(url: str = None, *, logger=None):
     """
-        Дождаться пока по адресу url заработает сервер auth_api
+    Дождаться пока по адресу url заработает сервер auth_api
     """
     url = url or f"http://{API_HOST}/test"
     while True:
+        # Делаем пазузу для старта сервисов
+        sleep(5)
         try:
             ans = requests.get(url)
         except requests.ConnectionError:
@@ -29,7 +31,9 @@ def wait_for_auth_api(url: str = None, *, logger=None):
             continue
         if ans.status_code != 200:
             if logger:
-                logger.warning("Ответ auth_api имеет код отличный от 200, попробуем позже")
+                logger.warning(
+                    f"Ответ auth_api имеет код отличный от 200, попробуем позже"
+                )
             sleep(5)
             continue
         if logger:
