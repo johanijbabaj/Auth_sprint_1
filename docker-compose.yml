@@ -107,10 +107,10 @@ services:
     env_file:
       - auth_api/flask_app/auth.env
     volumes:
-      - ./auth_api/flask_app:/auth_api/flask_app:ro
+      - ./auth_api/flask_app:/auth_api/flask_app
     networks:
       - movies_network
-    command: ["python", "app.py", "runserver", "--host", "0.0.0.0"]
+    command: ["python", "app.py"]
     depends_on:
       - postgres_auth
       - redis_auth

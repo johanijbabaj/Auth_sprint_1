@@ -4,12 +4,15 @@
 
 import logging
 import os
+import shutil
 import sys
+import time
 
-from auth_config import Config, db, jwt, jwt_redis
+from auth_config import Config, db, engine, insp, jwt, jwt_redis, migrate_obj
 from db_models import Group, User
 from flasgger import Swagger
 from flask import Flask
+from flask_migrate import init, migrate, upgrade
 from groups_bp.groups_bp import groups_bp
 from password_hash import check_password, hash_password
 from test_bp.test_bp import test_bp
@@ -33,10 +36,18 @@ def db_initialize(app):
     базы и уничтожит все имеющиеся данные в ней
     """
     with app.app_context():
+        # FIXME: удалить после добавления WSGI сервера
+        time.sleep(5)
         try:
             db.close_all_sessions()
             db.drop_all()
-            db.create_all()
+            if os.path.isdir(Config.MIGRATIONS_PATH):
+                shutil.rmtree(Config.MIGRATIONS_PATH)
+                engine.execute("DELETE FROM alembic_version")
+            init(Config.MIGRATIONS_PATH)
+            migrate(Config.MIGRATIONS_PATH)
+            upgrade(Config.MIGRATIONS_PATH)
+            # db.create_all()
             admin_group = Group(name="admin", description="Administrators")
             admin_user = User(
                 login="admin",
@@ -69,32 +80,29 @@ def db_initialize(app):
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config())
+
     app.register_blueprint(groups_bp, url_prefix=f"{BASE_PATH}/groups")
     app.register_blueprint(users_bp, url_prefix=f"{BASE_PATH}/users")
     app.register_blueprint(test_bp, url_prefix="/test")
-
     swagger = Swagger(app, template=Config.SWAGGER_TEMPLATE)
     db.init_app(app)
-    engine = db.create_engine(Config.SQLALCHEMY_DATABASE_URI, {})
+    # engine = db.create_engine(Config.SQLALCHEMY_DATABASE_URI, {})
     engine.execute("CREATE SCHEMA IF NOT EXISTS auth;")
     jwt.init_app(app)
-    # manager = Manager.init(app)
+    migrate_obj.init_app(app, db)
+
     return app
 
 
 if __name__ == "__main__":
     app = create_app()
-    # При прогоне тестов удаляем прошлые данные из базы и создаем заново
+
     with app.app_context():
+        # При прогоне тестов удаляем прошлые данные из базы и создаем заново
         if len(sys.argv) == 2 and sys.argv[1] == "--reinitialize":
             db.drop_all()
-        # Инициалиазции базы
-        try:
-            user = User.query.filter_by(login="admin").first()
-        except BaseException as ex:
-            # Проверяем  по содержимому ошибки созданы ли таблицы
-            # if "(psycopg2.errors.UndefinedTable)" in ex.args[0]:
-            logging.info(f"initializing : {ex}")
+        # Инициалиазции базы. Проверяем наличие таблицы пользователей
+        if not insp.has_table("user", schema="auth"):
+            logging.info(f"initializing...")
             db_initialize(app)
-            # logging.error(f"Unknown error: {ex}")
         app.run(host="0.0.0.0")
