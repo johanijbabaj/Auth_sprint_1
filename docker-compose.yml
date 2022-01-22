@@ -8,8 +8,8 @@ services:
       - db.env
     volumes:
       - ./pgdata:/var/lib/postgresql/data
-#    ports:
-#      - "5432:5432"
+    ports:
+      - "5433:5432"
     networks:
       - movies_network
 
@@ -18,6 +18,8 @@ services:
       context: movies_admin
       dockerfile: Dockerfile
     container_name: django_movies
+    env_file:
+      - all.env
     volumes:
       - static_volume:/data/static
     networks:
