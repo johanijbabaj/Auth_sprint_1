@@ -107,7 +107,7 @@ services:
       dockerfile: Dockerfile
     container_name: flask_auth_api
     env_file:
-      - auth_api/flask_app/auth.env
+      - auth.env
     volumes:
       - ./auth_api/flask_app:/auth_api/flask_app
     networks:
