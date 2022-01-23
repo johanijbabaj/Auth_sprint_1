@@ -2,7 +2,8 @@ import os
 from datetime import timedelta
 
 from flask_jwt_extended import JWTManager
-from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy, inspect
 
 import redis
 
@@ -25,11 +26,13 @@ class Config:
             }
         }
     }
+    MIGRATIONS_PATH = os.getenv("MIGRATIONS_PATH")
 
 
 db = SQLAlchemy(session_options={"autoflush": False})
-
-
+migrate_obj = Migrate()
+engine = db.create_engine(Config.SQLALCHEMY_DATABASE_URI, {})
+insp = inspect(engine)
 jwt_redis = redis.Redis(
     host=str(os.getenv("REDIS_AUTH_HOST")),
     port=int(os.getenv("REDIS_AUTH_PORT", 6379)),

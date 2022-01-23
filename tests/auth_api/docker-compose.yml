@@ -11,7 +11,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ../../auth_api/flask_app:/auth_api/flask_app:ro
+      - ../../auth_api/flask_app:/auth_api/flask_app
     networks:
       - movies_network
     command: ["python", "app.py", "--reinitialize"]

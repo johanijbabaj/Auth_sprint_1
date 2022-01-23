@@ -145,3 +145,4 @@ cython_debug/
 
 pgdata
 auth_api/postgres_auth/
+auth_api/flask_app/migrations_test
