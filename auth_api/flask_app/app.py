@@ -13,6 +13,7 @@ from db_models import Group, User
 from flasgger import Swagger
 from flask import Flask
 from flask_migrate import init, migrate, upgrade
+
 from groups_bp.groups_bp import groups_bp
 from password_hash import check_password, hash_password
 from test_bp.test_bp import test_bp
@@ -80,7 +81,6 @@ def db_initialize(app):
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config())
-
     app.register_blueprint(groups_bp, url_prefix=f"{BASE_PATH}/groups")
     app.register_blueprint(users_bp, url_prefix=f"{BASE_PATH}/users")
     app.register_blueprint(test_bp, url_prefix="/test")
