@@ -1,11 +1,11 @@
 version: "3.7"
 
 services:
-  flask_auth_api_test:
+  flask_auth_api:
     build:
       context: ../../auth_api/flask_app
       dockerfile: Dockerfile
-    container_name: flask_auth_api_test
+    container_name: flask_auth_api
     env_file:
       - auth.env
     ports:
@@ -55,7 +55,7 @@ services:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - flask_auth_api_test
+      - flask_auth_api
     env_file:
         - tests.env
     networks:
