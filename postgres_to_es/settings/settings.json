@@ -3,7 +3,7 @@
     "host": "postgres",
     "port": 5432,
     "dbname": "movies",
-    "password": "postgres",
+    "password": "123",
     "user": "postgres"
   },
   "film_work_es": {

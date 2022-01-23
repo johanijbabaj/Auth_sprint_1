@@ -33,6 +33,7 @@ db = SQLAlchemy(session_options={"autoflush": False})
 migrate_obj = Migrate()
 engine = db.create_engine(Config.SQLALCHEMY_DATABASE_URI, {})
 insp = inspect(engine)
+
 jwt_redis = redis.Redis(
     host=str(os.getenv("REDIS_AUTH_HOST")),
     port=int(os.getenv("REDIS_AUTH_PORT", 6379)),
