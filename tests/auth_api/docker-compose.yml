@@ -14,7 +14,6 @@ services:
       - ../../auth_api/flask_app:/auth_api/flask_app
     networks:
       - movies_network
-    command: ["python", "app.py", "--reinitialize"]
     deploy:
       restart_policy:
         condition: on-failure
@@ -29,7 +28,7 @@ services:
     image: postgres:13-alpine
     container_name: postgres_auth_test
     volumes:
-      - ./pgdata:/var/lib/postgresql/data
+      - ./pgdata2:/var/lib/postgresql/data
     env_file:
       - db_auth.env
     ports:

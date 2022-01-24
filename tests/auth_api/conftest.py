@@ -42,7 +42,8 @@ def seven_little_guys(request):
             },
             headers={"Authorization": "Bearer " + token},
         )
-        assert ans.status_code == 200
+        # Если пользователь уже существует, то все OK
+        assert ans.status_code in [200, 409]
         ans = requests.post(
             f"http://{AUTH_API_HOST}/v1/groups/{gid}/users/",
             json={"user_id": str(uid)},
