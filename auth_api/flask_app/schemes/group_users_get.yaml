@@ -1,13 +1,192 @@
-#Получить данные по пользователям группы
-#---
-#swagger: "2.0"
+swagger: "2.0"
+info:
+  description: "Тестовый сервис авторизации"
+  version: "1.0"
+  title: "Auth_API"
+basePath: "/v1"
 tags:
-  - Group
-summary: "Получить данные по группе"
-description: ""
-produces:
+- name: "user"
+  description: "Операции с пользователями"
+- name: "group"
+  description: "Операции с группами"
+schemes:
+- "https"
+- "http"
+
+
+paths:
+  /users/:
+    get:
+      tags:
+      - User
+      summary: "Список всех зарегистрированных пользователей"
+      description: ""
+      parameters:
+      - name: "page_size"
+        type: "integer"
+        in: "query"
+        description: "Размер страницы для постраничной выдачи"
+      - name: "page_number"
+        type: "integer"
+        in: "query"
+        description: "Номер страницы для постраничной выдачи, начиная с 1"
+      produces:
       - "application/json"
-parameters:
+      responses:
+        "200":
+          description: "Список пользователей или страница из этого списка"
+          schema:
+            $ref: "#/definitions/UserBriefList"
+
+  /users/{user_id}/:
+    get:
+      tags:
+      - User
+      summary: "Получить данные по пользователю"
+      description: ""
+      produces:
+      - "application/json"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        type: "string"
+        format: "uuid"
+        required: true
+        description: "Идентификатор пользователя"
+      responses:
+        "200":
+          description: "Данные пользователя"
+          schema:
+            $ref: "#/definitions/UserBrief"
+        "404":
+          description: "Пользователь не найден"
+
+  /groups/:
+    get:
+      tags:
+      - Group
+      summary: "Список всех групп пользователей"
+      description: ""
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "Список групп пользователей"
+          schema:
+            $ref: "#/definitions/GroupList"
+
+    post:
+      tags:
+      - Group
+      summary: "Создать новую группу"
+      description: ""
+      produces:
+      - "application/json"
+      security:
+      - APIKey: []
+      parameters:
+      - name: Group
+        in: body
+        description: "Создаваемая группа"
+        schema:
+          $ref: '#/definitions/Group'
+      responses:
+        "200":
+          description: ОК
+          schema:
+            $ref: "#/definitions/Group"
+        401:
+          description: "UNAUTHORIZED"
+        403:
+          description: "FORBIDDEN"
+
+  /groups/{group_id}:
+    get:
+      tags:
+      - Group
+      summary: "Получить данные по группе"
+      description: ""
+      produces:
+      - "application/json"
+      parameters:
+      - name: "group_id"
+        in: "path"
+        type: "string"
+        format: "uuid"
+        required: true
+        description: "Идентификатор группы"
+      responses:
+        "200":
+          description: "Данные группы"
+          schema:
+            $ref: "#/definitions/Group"
+        "404":
+          description: "Группа не найдена"
+
+    delete:
+      tags:
+      - Group
+      summary: "Удалить группу"
+      description: ""
+      produces:
+      - "application/json"
+      security:
+      - APIKey: []
+      parameters:
+      - name: "group_id"
+        in: "path"
+        type: "string"
+        format: "uuid"
+        required: true
+        description: "Идентификатор группы"
+      responses:
+        "200":
+          description: "OK"
+        "401":
+          description: "UNAUTHORIZED"
+        "403":
+          description: "FORBIDDEN"
+
+    put:
+      tags:
+      - Group
+      summary: "Обновить данные группы"
+      description: ""
+      produces:
+      - "application/json"
+      security:
+      - APIKey: []
+      parameters:
+      - name: "group_id"
+        in: "path"
+        type: "string"
+        format: "uuid"
+        required: true
+        description: "Идентификатор группы"
+      - name: Group
+        in: body
+        description: "Данные группы"
+        schema:
+          $ref: '#/definitions/Group'
+      responses:
+        "200":
+          description: ОК
+          schema:
+            $ref: "#/definitions/Group"
+        401:
+          description: "UNAUTHORIZED"
+        403:
+          description: "FORBIDDEN"
+
+  /groups/{group_id}/users/:
+    get:
+      tags:
+      - Group
+      summary: "Получить список пользователей группы"
+      description: ""
+      produces:
+      - "application/json"
+      parameters:
       - name: "group_id"
         in: "path"
         type: "string"
@@ -15,19 +194,59 @@ parameters:
         required: true
         description: "Идентификатор группы"
       - name: "page_number"
-        in: "path"
+        in: "query"
         type: "integer"
         required: true
       - name: "page_size"
-        in: "path"
+        in: "query"
         type: "integer"
         required: true
+      responses:
+        "200":
+          description: "Массив пользователей группы"
+          schema:
+            $ref: "#/definitions/UserList"
+
 responses:
-      "200":
-        description: "Массив пользователей группы"
-        schema:
-          $ref: "#/definitions/UserList"
+  200:
+    description: ОК
+    schema:
+      $ref: "#/definitions/Group"
+  401:
+    description: UNAUTHORIZED
+  403:
+    description: FORBIDDEN
+
 definitions:
+  UserBrief:
+    type: "object"
+    properties:
+      email:
+        type: "string"
+        format: email
+      id:
+        type: "string"
+        format: "uuid"
+      login:
+        type: "string"
+  UserBriefList:
+    type: "array"
+    items:
+      $ref: "#/definitions/UserBrief"
+  Group:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      name:
+        type: "string"
+      description:
+        type: "string"
+  GroupList:
+    type: "array"
+    items:
+      $ref: "#/definitions/Group"
   User:
     type: "object"
     properties:
@@ -64,3 +283,9 @@ definitions:
     type: "array"
     items:
       $ref: "#/definitions/User"
+
+securityDefinitions:
+  APIKey:
+    type: apiKey
+    name: Authorization
+    in: header

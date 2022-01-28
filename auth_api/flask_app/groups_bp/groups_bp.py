@@ -10,7 +10,7 @@ from flask.json import jsonify
 groups_bp = Blueprint("groups_bp", __name__)
 
 
-@swag_from("../schemes/groups_get.yaml")
+@swag_from("../schemes/auth_api_swagger.yaml", endpoint='list_groups', methods=["GET"], validation=True)
 @groups_bp.route("/", methods=["GET"])
 def list_groups():
     """
@@ -22,9 +22,9 @@ def list_groups():
     return jsonify(groups)
 
 
+@swag_from("../schemes/auth_api_swagger.yaml", endpoint='create_group', methods=["POST"], validation=True)
 @groups_bp.route("/", methods=["POST"])
 @admin_required()
-@swag_from("../schemes/group_post.yaml")
 def create_group():
     """
     Создать новую группу
@@ -38,6 +38,7 @@ def create_group():
     return jsonify(group.to_json())
 
 
+@swag_from("../schemes/auth_api_swagger.yaml", endpoint='get_group', methods=["GET"], validation=True)
 @swag_from("../schemes/group_get.yaml")
 @groups_bp.route("/<group_id>/", methods=["GET"])
 def get_group(group_id):
@@ -50,9 +51,9 @@ def get_group(group_id):
     return jsonify(group.to_json())
 
 
+@swag_from("../schemes/auth_api_swagger.yaml", endpoint='delete_group', methods=["DELETE"], validation=True)
 @groups_bp.route("/<group_id>/", methods=["DELETE"])
 @admin_required()
-@swag_from("../schemes/group_del.yaml")
 def del_group(group_id):
     """
     Удалить группу

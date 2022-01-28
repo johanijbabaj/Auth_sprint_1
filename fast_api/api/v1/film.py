@@ -27,9 +27,10 @@ from typing import List, Literal, Optional
 from uuid import UUID
 
 from core.config import ErrorMessage
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from models.film import FilmApi, FilmBriefApi, FilmGenreApi, FilmPeopleApi
 from services.film import FilmService, get_film_service
+from utils import get_user_type
 
 # Объект router, в котором регистрируем обработчики
 router = APIRouter()
@@ -65,13 +66,16 @@ async def film_search(
 
 @router.get("/{film_id}", response_model=FilmApi)
 async def film_details(
-    film_id: str, film_service: FilmService = Depends(get_film_service)
+    film_id: str, film_service: FilmService = Depends(get_film_service),
+    authorization: Optional[str] = Header(None)
 ) -> FilmApi:
     """
     Пример обращений, которые должны обрабатываться API
     #GET /api/v1/film/bf3bd131-b844-4585-9974-6c374cff2371
     #GET /api/v1/film/ff00b2a9-9e85-44af-922f-5f3504b82c15
     """
+    # Получаем тип пользователя - анонимный, бесплатный или премиальный
+    user_type = get_user_type(authorization)
     film = await film_service.get_by_id(film_id)
     if not film:
         # Если фильм не найден, отдаём 404 статус
@@ -80,7 +84,11 @@ async def film_details(
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail=ErrorMessage.FILM_NOT_FOUND
         )
-
+    # Фильмы с низким рейтингом не показываем пользователю без подписки
+    if user_type != "paid" and film.imdb_rating < 5:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail="Вы не оформили необходимую подписку"
+        )
     # Перекладываем данные из models.Film в Film
     # Обратите внимание, что у модели бизнес-логики есть поле description
     # Которое отсутствует в модели ответа API.
@@ -119,6 +127,7 @@ async def film_list(
     page_size: int = Query(10, alias="page[size]"),
     page_number: int = Query(1, alias="page[number]"),
     film_service: FilmService = Depends(get_film_service),
+    authorization: Optional[str] = Header(None)
 ) -> List[FilmBriefApi]:
     """
     Примеры обращений, которые должны обрабатываться API
@@ -127,11 +136,18 @@ async def film_list(
     """
     logging.debug(
         f"Получили параметры {sort=}-{type(sort)}, {filter_genre=}-{type(filter_genre)},"
-        f" {page_size=}-{type(page_size)}, {page_number=}-{type(page_number)}"
+        f" {page_size=}-{type(page_size)}, {page_number=}-{type(page_number)},"
+        f"authorization={authorization}"
     )
+    # Получаем тип пользователя - анонимный, бесплатный или премиальный
+    user_type = get_user_type(authorization)
     # Получаем список фильмов
-    # Доработать сортировку ort=-imdb_rating
-    films = await film_service.get_list(filter_genre, sort, page_size, page_number)
+    # Доработать сортировку sort=-imdb_rating
+    if user_type == "paid":
+        films = await film_service.get_list(filter_genre, sort, page_size, page_number)
+    else:
+        # Пользователям без подписки не показываем некоторые фильмы
+        films = await film_service.get_list(filter_genre, sort, page_size, page_number, min_rating=5)
     if not films:
         # Если выборка пустая, отдаём 404 статус
         # Желательно пользоваться уже определёнными HTTP-статусами, которые содержат enum

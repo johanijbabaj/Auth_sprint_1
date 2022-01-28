@@ -1,5 +1,7 @@
 from datetime import datetime
+from functools import wraps
 from http import HTTPStatus
+import os
 
 from auth_config import Config, db, jwt, jwt_redis
 from db_models import History, User
@@ -14,15 +16,45 @@ from flask_jwt_extended import (
     jwt_required,
     verify_jwt_in_request,
 )
+import redis
+
 from password_hash import check_password, hash_password
 
 jwt_redis_blocklist = jwt_redis
 users_bp = Blueprint("users_bp", __name__)
 
 
-@swag_from("../schemes/users_get.yaml", methods=["GET"])
+def limit_requests(per_minute: int):
+    redis_host = os.getenv('REDIS_AUTH_HOST', 'redis_auth')
+    redis_port = os.getenv('REDIS_AUTH_PORT', 6479)
+    redis_password = os.getenv('REDIS_AUTH_PASSWORD', 'superpassword')
+    redis_conn =  redis.Redis(host=redis_host, port=redis_port, db=0, password=redis_password)
+
+    def wrapper(func):
+
+        @wraps(func)
+        def wrapped(*args, **kwargs):
+            pipe = redis_conn.pipeline()
+            now = datetime.now()
+            key = f"{now.hour}:{now.minute}"
+            pipe.incr(key, 1)
+            pipe.expire(key, 59)
+            result = pipe.execute()
+            print(key)
+            print(result)
+            if result[0] > per_minute:
+                return jsonify({'error': 'too many requests'}), HTTPStatus.TOO_MANY_REQUESTS
+            return func(*args, **kwargs)
+
+        return wrapped
+
+    return wrapper
+
+
+@swag_from("../schemes/auth_api_swagger.yaml", endpoint='list_users', methods=["GET"], validation=True)
 @users_bp.route("/", methods=["GET"])
-def list_users():
+@limit_requests(per_minute=10)
+def list_users(**kwargs):
     """
     Список всех зарегистрированных пользователей
     """
@@ -42,11 +74,19 @@ def list_users():
     return jsonify(users), HTTPStatus.OK
 
 
-@swag_from("../schemes/user_register.yaml", validation=True)
+@swag_from("../schemes/auth_api_swagger.yaml", endpoint='register', methods=['POST'], validation=True)
 @users_bp.route("/register", methods=["POST"])
+@limit_requests(per_minute=10)
 def register():
     """
     Метод регистрации пользователя
+
+    Это операция может быть довольно трудоемкой (проверка существования
+    такого логина и адреса электронной почты, в перспективе - телефона,
+    отправка SMS или электронного письма). Плюс к этому - пользователей
+    мы не удаляем и каждая регистрация увеличит размеры нашей базы
+    необратимо. Поэтому ограничим количество регистраций десятью в
+    минуту.
     """
     obj = request.json
     user = User.query.filter_by(email=obj["email"]).first()
@@ -166,7 +206,7 @@ def update():
     )
 
 
-@swag_from("../schemes/user_get.yaml", methods=["GET"])
+@swag_from("../schemes/auth_api_swagger.yaml", endpoint='get_user', methods=["GET"], validation=True)
 @users_bp.route("/<user_id>/", methods=["GET"])
 def get_user(user_id):
     """
@@ -178,9 +218,9 @@ def get_user(user_id):
     return jsonify(user.to_json())
 
 
+@swag_from("../schemes/auth_api_swagger.yaml", endpoint='get_user_history', methods=["GET"], validation=True)
 @users_bp.route("/history", methods=["GET"])
 @jwt_required()
-@swag_from("../schemes/user_history_get.yaml", methods=["GET"])
 def get_user_history(**kwargs):
     """
     Получить историю операций пользователя
@@ -200,6 +240,22 @@ def get_user_history(**kwargs):
             .items
         )
     return jsonify([h.to_json() for h in history])
+
+
+@swag_from("../schemes/auth_api_swagger.yaml", endpoint='get_user_groups', methods=["GET"], validation=True)
+@users_bp.route("/groups", methods=["GET"])
+@jwt_required()
+def get_user_groups(**kwargs):
+    """
+    Получить список групп, в которых состоит текущий пользователь
+    """
+    current_user = User.query.get(get_jwt_identity())
+    if not current_user:
+        return jsonify({"error": "No such user"}), HTTPStatus.NOT_FOUND
+    groups = []
+    for group in current_user.get_all_groups().all():
+        groups.append(group.to_json())
+    return jsonify(groups)
 
 
 @jwt.token_in_blocklist_loader

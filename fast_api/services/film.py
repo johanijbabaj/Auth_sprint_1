@@ -65,6 +65,7 @@ class FilmService(AbstractService):
         page_size: int,
         page_number: int,
         query: Optional[str] = "",
+        min_rating: Optional[float] = None
     ) -> List[FilmBrief]:
         films = await self._get_list_from_cache(
             filter_genre, sort, page_size, page_number, query
@@ -78,6 +79,8 @@ class FilmService(AbstractService):
             await self._put_list_to_cache(
                 films, filter_genre, sort, page_size, page_number, query
             )
+        if min_rating:
+            films = [film for film in films if film.imdb_rating >= min_rating]
         return films
 
     async def _get_list_from_storage(
